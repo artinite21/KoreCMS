@@ -596,7 +596,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         AllowPrivateMessages = forumSettings.AllowPrivateMessages,
                         SignaturesEnabled = forumSettings.SignaturesEnabled,
                         FormattedSignature = postUser.GetAttribute<string>(SystemUserAttributeNames.Signature).FormatForumSignatureText(),
-                    };
+                        BlockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, post.UserId, true)
+                };
                     //created on string
                     if (forumSettings.RelativeDateTimeFormattingEnabled)
                     {

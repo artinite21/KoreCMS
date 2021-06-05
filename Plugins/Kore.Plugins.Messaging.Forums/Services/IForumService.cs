@@ -34,6 +34,17 @@ namespace Kore.Plugins.Messaging.Forums.Services
 
         Task<ForumTopic> GetTopicById(int forumTopicId, bool increaseViews);
 
+        Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked);
+
+        Task<IPagedList<BlockedUser>> GetAllBlockedUsers(
+            string blockedByUserId,
+            int pageIndex = 0,
+            int pageSize = int.MaxValue);
+
+        Task InsertBlockedUser(BlockedUser blockedUser);
+
+        Task UpdateBlockedUser(BlockedUser blockedUser);
+
         Task<IPagedList<ForumTopic>> GetAllTopics(
             int forumId = 0,
             string userId = null,

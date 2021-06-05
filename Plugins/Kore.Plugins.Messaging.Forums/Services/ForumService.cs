@@ -21,6 +21,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
         private readonly ICacheManager cacheManager;
         private readonly IGenericAttributeService genericAttributeService;
         private readonly IMembershipService membershipService;
+        private readonly IRepository<BlockedUser> blockedUserRepository;
         private readonly IRepository<Forum> forumRepository;
         private readonly IRepository<ForumGroup> forumGroupRepository;
         private readonly IRepository<ForumPost> forumPostRepository;
@@ -43,6 +44,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
             ICacheManager cacheManager,
             IGenericAttributeService genericAttributeService,
             IMembershipService membershipService,
+            IRepository<BlockedUser> blockedUserRepository,
             IRepository<Forum> forumRepository,
             IRepository<ForumGroup> forumGroupRepository,
             IRepository<ForumPost> forumPostRepository,
@@ -52,6 +54,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
             IWorkContext workContext)
         {
             this.cacheManager = cacheManager;
+            this.blockedUserRepository = blockedUserRepository;
             this.forumGroupRepository = forumGroupRepository;
             this.forumPostRepository = forumPostRepository;
             this.forumPrivateMessageRepository = forumPrivateMessageRepository;
@@ -1091,6 +1094,76 @@ namespace Kore.Plugins.Messaging.Forums.Services
             }
 
             return pageIndex;
+        }
+
+        public virtual async Task InsertBlockedUser(BlockedUser blockedUser)
+        {
+            if (blockedUser == null)
+            {
+                throw new ArgumentNullException("blockedUser");
+            }
+
+            await blockedUserRepository.InsertAsync(blockedUser);
+
+            var blockedUserTo = await membershipService.GetUserById(blockedUser.BlockedUserId);
+            if (blockedUserTo == null)
+            {
+                throw new KoreException("Recipient could not be loaded");
+            }
+        }
+
+        public virtual async Task UpdateBlockedUser(BlockedUser blockedUser)
+        {
+            if (blockedUser == null)
+            {
+                throw new ArgumentNullException("blockedUser");
+            }
+
+            await blockedUserRepository.UpdateAsync(blockedUser);
+            //event notification
+            //_eventPublisher.EntityDeleted(blockedUser);  
+        }
+
+        public virtual async Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked)
+        {
+            BlockedUser blockedUser;
+            using (var connection = blockedUserRepository.OpenConnection())
+            {
+                if (isBlocked.HasValue)
+                {
+                    blockedUser = await connection.Query(x => x.BlockedByUserId == blockedByUserId && x.BlockedUserId == blockedUserId && x.IsBlocked == isBlocked).FirstOrDefaultAsync();
+                }
+                else
+                {
+                    blockedUser = await connection.Query(x => x.BlockedByUserId == blockedByUserId && x.BlockedUserId == blockedUserId).FirstOrDefaultAsync();
+                }
+            }
+
+            if (blockedUser == null)
+            {
+                return null;
+            }
+
+            return blockedUser;
+        }
+
+        public virtual async Task<IPagedList<BlockedUser>> GetAllBlockedUsers(string blockedByUserId, int pageIndex = 0, int pageSize = int.MaxValue)
+        {
+            // List<BlockedUser> blockedUsers = new List<BlockedUser>();         
+
+            using (var blockedUserConnection = blockedUserRepository.OpenConnection())
+            {
+                var query = blockedUserConnection.Query();
+
+                if (!string.IsNullOrEmpty(blockedByUserId))
+                {
+                    //blockedUsers = await query.Where(bu => bu.BlockedByUserId == blockedByUserId).ToListAsync();
+                    query = query.Where(bu => bu.BlockedByUserId == blockedByUserId);
+                }
+                query = query.OrderByDescending(bu => bu.BlockedByUserId);
+
+                return await Task.FromResult(new PagedList<BlockedUser>(query, pageIndex, pageSize)); ;
+            }
         }
 
         #endregion Methods

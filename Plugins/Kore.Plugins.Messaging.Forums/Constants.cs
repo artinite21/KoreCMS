@@ -18,6 +18,7 @@
             public const string Subscriptions = "Kore_Plugins_Forums_Subscriptions";
             public const string Topics = "Kore_Plugins_Forums_Topics";
             public const string PrivateMessages = "Kore_Plugins_Forums_PrivateMessages";
+            public const string BlockedUsers = "BlockedUsers";
         }
     }
 }

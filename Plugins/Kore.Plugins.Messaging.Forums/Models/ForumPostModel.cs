@@ -1,4 +1,7 @@
-﻿using System;
+﻿using Kore.Collections.Generic;
+using Kore.Plugins.Messaging.Forums.Data.Domain;
+using System;
+using System.Collections.Generic;
 
 namespace Kore.Plugins.Messaging.Forums.Models
 {
@@ -47,5 +50,7 @@ namespace Kore.Plugins.Messaging.Forums.Models
         public string FormattedSignature { get; set; }
 
         public int CurrentTopicPage { get; set; }
+
+        public BlockedUser BlockedUser { get; set; }
     }
 }

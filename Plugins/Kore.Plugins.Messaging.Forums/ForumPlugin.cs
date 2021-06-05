@@ -26,6 +26,7 @@ namespace Kore.Plugins.Messaging.Forums
             DropTable(dbContext, Constants.Tables.Topics);
             DropTable(dbContext, Constants.Tables.Forums);
             DropTable(dbContext, Constants.Tables.Groups);
+            DropTable(dbContext, Constants.Tables.BlockedUsers);
 
             base.Uninstall();
         }

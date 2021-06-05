@@ -1,5 +1,6 @@
 ﻿@using Kore.Plugins.Messaging.Forums
 @using Kore.Plugins.Messaging.Forums.Models
+
 @model ForumPostModel
 
 <a name="@Model.Id"></a>
@@ -68,8 +69,8 @@
             </a>
         </div>
         @*<div class="quote-post">
-            @Html.ActionLink(T(LocalizableStrings.QuotePost), "PostCreate", new { id = Model.ForumTopicId, quote = Model.Id }, new { @class = "btn btn-xs quote-post-button" })
-        </div>*@
+                @Html.ActionLink(T(LocalizableStrings.QuotePost), "PostCreate", new { id = Model.ForumTopicId, quote = Model.Id }, new { @class = "btn btn-xs quote-post-button" })
+            </div>*@
     </th>
 </tr>
 <tr class="topic-post-content-row">
@@ -106,12 +107,26 @@
         </ul>
         @if (Model.AllowPrivateMessages)
         {
-            <div class="send-pm">
-                <a href="@Url.Action("SendPM", "PrivateMessages", new { toUserId = Model.UserId })" class="btn btn-xs pm-button">
-                    <i class="fa fa-comment"></i>
-                    @T(LocalizableStrings.PrivateMessages.PM)
-                </a>
-            </div>
+    <div class="send-pm">
+        @if (Model.BlockedUser == null)
+        {
+            <a href="@Url.Action("PMCreate", "PrivateMessages", new { toUserId = Model.UserId })" class="btn btn-xs pm-button">
+                <i class="fa fa-comment"></i>
+                @T(LocalizableStrings.PrivateMessages.PM)
+            </a>
+            <a href="@Url.Action("BlockUser", "PrivateMessages", new { blockedUserId = Model.UserId, isBlocked = true })" class="btn btn-xs">
+                <i class="fa fa-comment"></i>
+                Block
+            </a>
+        }
+        else
+        {
+            <a href="@Url.Action("BlockUser", "PrivateMessages", new { blockedUserId = Model.UserId, isBlocked = false })" class="btn btn-xs">
+                <i class="fa fa-comment"></i>
+                Unblock
+            </a>
+        }
+    </div>
         }
     </td>
     <td colspan="3" class="post-content">

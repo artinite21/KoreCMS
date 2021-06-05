@@ -1,0 +1,187 @@
+﻿@using Kore.Plugins.Messaging.Forums.Models
+
+@model MailBoxModel
+
+<ul class="nav nav-tabs">
+    <li class="active inboxTab"><a data-toggle="tab" href="#inbox">Inbox</a></li>
+    <li class="sentTab"><a data-toggle="tab" href="#sent">Sent</a></li>
+</ul>
+
+<div class="tab-content">
+    <div id="inbox" class="tab-pane fade in active">
+        <div class="row forums-table-section forum-group">
+            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                <div class="panel panel-primary forum-group-panel">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            Inbox
+                        </h3>
+                        @if (Model.AllPrivateMessages.Count == 1)
+                        {
+                            <h5>@Model.AllPrivateMessages.Count message</h5>
+                        }
+                        else if (Model.AllPrivateMessages.Count > 0)
+                        {
+                            <h5>@Model.AllPrivateMessages.Count messages</h5>
+                        }
+                        else
+                        {
+                            <h5>You currently have no messages</h5>
+                        }
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-bordered">
+                            @*<colgroup>
+                                    <col width="1" />
+                                    <col />
+                                    <col width="1" />
+                                    <col width="1" />
+                                    <col width="1" />
+                                </colgroup>*@
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Read
+                                    </th>
+                                    <th>
+                                        From / Subject
+                                    </th>
+                                    <th>
+                                        Date
+                                    </th>
+                                    <th>
+                                        Delete Message
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var pm in Model.AllPrivateMessages)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (!pm.IsRead)
+                                            {
+                                                <a href='@Url.Action("PMView", "PrivateMessages", new { id = pm.Id })'>
+                                                    <img src="/Plugins/Messaging.Forums/Content/images/MailUnread.png" />
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a href='@Url.Action("PMView", "PrivateMessages", new { id = pm.Id })'>
+                                                    <img src="/Plugins/Messaging.Forums/Content/images/MailRead.png" />
+                                                </a>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div>
+                                                @pm.FromUser
+                                            </div>
+                                            <div>
+                                                @pm.Subject
+                                            </div>
+                                        </td>
+                                        <td>@pm.CreatedOnUtc</td>
+                                        <td>
+                                            <a href="@Url.Action("PMDelete", "PrivateMessages", new { id = pm.Id })" onclick="return confirm('@T(KoreWebLocalizableStrings.General.AreYouSure)');" class="btn btn-xs text-danger">
+                                                <i class="fa fa-remove"></i>
+                                                Delete Message
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="sent" class="tab-pane fade">
+        <div class="row forums-table-section forum-group">
+            <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+                <div class="panel panel-primary forum-group-panel">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">
+                            Sent Messages
+                        </h3>
+                        @if (Model.SentMessages.Count == 1)
+                        {
+                            <h5>@Model.SentMessages.Count message</h5>
+                        }
+                        else if (Model.SentMessages.Count > 0)
+                        {
+                            <h5>@Model.SentMessages.Count messages</h5>
+                        }
+                        else
+                        {
+                            <h5>No sent messages to display</h5>
+                        }
+                    </div>
+                    <div class="panel-body">
+                        <table class="table table-bordered">
+                            @*<colgroup>
+                                    <col width="1" />
+                                    <col />
+                                    <col width="1" />
+                                    <col width="1" />
+                                    <col width="1" />
+                                </colgroup>*@
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Read
+                                    </th>
+                                    <th>
+                                        To / Subject
+                                    </th>
+                                    <th>
+                                        Date
+                                    </th>
+                                    <th>
+                                        Delete Message
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var spm in Model.SentMessages)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (!spm.IsRead)
+                                            {
+                                                <a href='@Url.Action("SentPMView", "PrivateMessages", new { id = spm.Id })'>
+                                                    <img src="/Plugins/Messaging.Forums/Content/images/MailUnread.png" />
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <a href='@Url.Action("SentPMView", "PrivateMessages", new { id = spm.Id })'>
+                                                    <img src="/Plugins/Messaging.Forums/Content/images/MailRead.png" />
+                                                </a>
+                                            }
+                                        </td>
+                                        <td>
+                                            <div>
+                                                @spm.ToUser
+                                            </div>
+                                            <div>
+                                                @spm.Subject
+                                            </div>
+                                        </td>
+                                        <td>@spm.CreatedOnUtc</td>
+                                        <td>
+                                            <a href="@Url.Action("PMDelete", "PrivateMessages", new { id = spm.Id })" onclick="return confirm('@T(KoreWebLocalizableStrings.General.AreYouSure)');" class="btn btn-xs text-danger">
+                                                <i class="fa fa-remove"></i>
+                                                Delete Message
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
