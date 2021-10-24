@@ -164,7 +164,7 @@ namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
             var userIds = model.Select(x => x.UserId).Distinct();
             var userNames = (await membershipService.Value.GetUsers(WorkContext.CurrentTenant.Id, x => userIds.Contains(x.Id))).ToDictionary(k => k.Id, v => v.UserName);
             var userNames2 = (await membershipService.Value.GetUsers(null, x => userIds.Contains(x.Id))).ToDictionary(k => k.Id, v => v.UserName);
-            
+
             foreach (var keyValue in userNames2)
             {
                 userNames.Add(keyValue.Key, keyValue.Value);
@@ -175,6 +175,16 @@ namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
             ViewBag.PageCount = (int)Math.Ceiling((double)total / blogSettings.ItemsPerPage);
             ViewBag.PageIndex = pageIndex;
             ViewBag.UserNames = userNames;
+
+            var tenantUsers = await membershipService.Value.GetUsers(null, x => userIds.Contains(x.Id));
+            var userDisplayNames = new Dictionary<string, string>();
+
+            foreach (var tu in tenantUsers)
+            {
+                userDisplayNames.Add(tu.Id, await membershipService.Value.GetUserDisplayName(tu));
+            }
+
+            ViewBag.UserDisplayNames = userDisplayNames;
 
             var tags = await tagService.Value.FindAsync();
             ViewBag.Tags = tags.ToDictionary(k => k.Id, v => v.Name);
@@ -256,7 +266,8 @@ namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
                 ? (await postService.Value.FindOneAsync(x => x.TenantId == tenantId && x.DateCreatedUtc == nextEntryDate)).Slug
                 : null;
 
-            ViewBag.UserName = (await membershipService.Value.GetUserById(model.UserId)).UserName;
+            var user = await membershipService.Value.GetUserById(model.UserId);
+            ViewBag.UserName = (await membershipService.Value.GetUserDisplayName(user));
 
             var tags = await tagService.Value.FindAsync(x => x.TenantId == tenantId);
             ViewBag.Tags = tags.ToDictionary(k => k.Id, v => v.Name);

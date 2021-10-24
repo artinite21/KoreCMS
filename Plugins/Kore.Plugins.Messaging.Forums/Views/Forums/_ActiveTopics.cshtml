@@ -8,13 +8,13 @@
         <div class="panel panel-default active-discussions-panel">
             <div class="panel-heading">
                 <h3 class="panel-title">
-                    @if (Model.ActiveDiscussionsFeedEnabled)
-                    {
-                        <a href="@Url.Action("ActiveDiscussionsRSS")" class="btn btn-link btn-xs link-rss" title="@T(LocalizableStrings.ActiveDiscussionsRSSLinkTitle)">
-                            <i class="fa fa-rss"></i>
-                            @T(LocalizableStrings.RSS)
-                        </a>
-                    }
+                    @*@if (Model.ActiveDiscussionsFeedEnabled)
+                        {
+                            <a href="@Url.Action("ActiveDiscussionsRSS")" class="btn btn-link btn-xs link-rss" title="@T(LocalizableStrings.ActiveDiscussionsRSSLinkTitle)">
+                                <i class="fa fa-rss"></i>
+                                @T(LocalizableStrings.RSS)
+                            </a>
+                        }*@
                     @T(LocalizableStrings.ActiveDiscussions)
                 </h3>
             </div>
@@ -45,9 +45,9 @@
                         <table class="table table-bordered">
                             <colgroup>
                                 <col />
-                                <col width="1" />
-                                <col width="1" />
-                                <col width="1" />
+                                <col width="100" />
+                                <col width="100" />
+                                <col width="150" />
                             </colgroup>
                             <thead>
                                 <tr>

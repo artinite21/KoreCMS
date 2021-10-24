@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Web.Mvc;
 using System.Linq;
 using Kore.Collections.Generic;
+using Kore.Web.ContentManagement.Areas.Admin.Messaging;
+using Kore.Web.ContentManagement.Areas.Admin.Messaging.Services;
 
 namespace Kore.Plugins.Messaging.Forums.Controllers
 {
@@ -18,45 +20,60 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
     [RoutePrefix("pm")]
     public class PrivateMessagesController : KoreController
     {
+        private readonly IFriendService friendService;
         private readonly IForumService forumService;
         private readonly ForumSettings forumSettings;
         private readonly IMembershipService membershipService;
+        private readonly IMessageService messageService;
 
-        public PrivateMessagesController(IForumService forumService,
+        public PrivateMessagesController(
+            IFriendService friendService,
+            IForumService forumService,
             IMembershipService membershipService,
+            IMessageService messageService,
             ForumSettings forumSettings)
         {
+            this.friendService = friendService;
             this.forumService = forumService;
             this.membershipService = membershipService;
+            this.messageService = messageService;
             this.forumSettings = forumSettings;
+
+            WorkContext.Breadcrumbs.Add("MailBox");
         }
 
-        [Route("create/{id}/{toUserId?}")]
-        public async Task<ActionResult> PMCreate(int id, string toUserId)
+        [Route("create/{toUserId?}")]
+        public async Task<ActionResult> PMCreate(string toUserId)
         {
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
             }
 
-            var blockedUser = await forumService.GetBlockedUserById(toUserId, WorkContext.CurrentUser.Id, true);
+            var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, toUserId, true);
+            var blockedByUser = await forumService.GetBlockedUserById(toUserId, WorkContext.CurrentUser.Id, true);
 
-            if (blockedUser != null)
+            if (blockedUser != null || blockedByUser != null)
             {
-                return RedirectToHomePage();
+                return new HttpUnauthorizedResult();
             }
 
             var pmUser = await membershipService.GetUserById(toUserId);
 
-            var model = new PrivateMessageModel
+            if (pmUser != null)
             {
-                Id = 0,
-                ToUserId = toUserId,
-                ToUser = pmUser.UserName,
-                ForumEditor = forumSettings.ForumEditor
-            };
+                var model = new PrivateMessageModel
+                {
+                    Id = 0,
+                    ToUserId = toUserId,
+                    ForumEditor = forumSettings.ForumEditor
+                };
 
-            return View(model);
+                model.ToUser = await membershipService.GetUserDisplayName(pmUser);
+
+                return View(model);
+            }
+            return RedirectToAction("MailBox");
         }
 
         [HttpPost]
@@ -116,7 +133,22 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     };
                     await forumService.InsertPrivateMessage(pm);
 
-                    return RedirectToAction("MailBox");
+                    var fromUser = await membershipService.GetUserById(WorkContext.CurrentUser.Id);
+                    var toUser = await membershipService.GetUserById(model.ToUserId);
+
+                    var tokens = new List<Token>
+                    {
+                        new Token("[FromUserName]", await membershipService.GetUserDisplayName(fromUser)),
+                        new Token("[UserName]", await membershipService.GetUserDisplayName(toUser)),
+
+                        // May need to map image path to https://www.godofwonders.co.uk
+                        new Token("[GOWImage]", Url.Content(Server.MapPath("~/Media/GOW_Logo.png")))
+                    };
+
+                    messageService.SendEmailMessage(WorkContext.CurrentTenant.Id, "Mailbox: Received", tokens, toUser.Email);
+
+                    string url = Url.Action("MailBox");
+                    return Redirect(string.Format("{0}#{1}", url, "SentButton"));
                 }
                 catch (Exception ex)
                 {
@@ -135,23 +167,49 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 return RedirectToHomePage();
             }
 
+            WorkContext.Breadcrumbs.Add("Inbox");
+            WorkContext.Breadcrumbs.Add("PM");
+
             var pm = await forumService.GetPrivateMessageById(id);
 
-            var model = new PrivateMessageModel
+            if (pm != null)
             {
-                Id = pm.Id,
-                FromUser = membershipService.GetUserById(pm.FromUserId).Result.UserName,
-                FromUserId = pm.FromUserId,
-                ToUserId = pm.ToUserId,
-                Subject = pm.Subject,
-                Text = pm.Text,
-                CreatedOnUtc = pm.CreatedOnUtc
-            };
+                if (pm.ToUserId != WorkContext.CurrentUser.Id)
+                {
+                    return new HttpUnauthorizedResult();
+                }
 
-            pm.IsRead = true;
-            await forumService.UpdatePrivateMessage(pm);
+                var model = new PrivateMessageModel
+                {
+                    Id = pm.Id,
+                    FromUserId = pm.FromUserId,
+                    ToUserId = pm.ToUserId,
+                    Subject = pm.Subject,
+                    Text = pm.FormatPrivateMessageText(),
+                    CreatedOnUtc = pm.CreatedOnUtc,
+                    FromUserAvatarUrl = await membershipService.GetProfileEntry(pm.FromUserId, "AvatarUrl")
+                };
 
-            return View(model);
+                var fromUser = await membershipService.GetUserById(pm.FromUserId);
+                model.FromUser = await membershipService.GetUserDisplayName(fromUser);
+
+                model.FromUserAvatarUrl = Kore.Web.Html.HtmlHelper.FormatText(model.FromUserAvatarUrl, false, true, false, true, false, false);
+
+                var blockedByUser = await forumService.GetBlockedUserById(pm.FromUserId, WorkContext.CurrentUser.Id, true);
+                model.BlockedByUser = blockedByUser != null && blockedByUser.IsBlocked;
+
+                var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, pm.FromUserId);
+                model.HasBlockedUser = blockedUser != null && blockedUser.IsBlocked;
+
+                var friend = await friendService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, pm.FromUserId);
+                model.IsFriend = friend != null;
+
+                pm.IsRead = true;
+                await forumService.UpdatePrivateMessage(pm);
+
+                return View(model);
+            }
+            return RedirectToAction("MailBox");
         }
 
         [Route("mailbox/delete/{id}")]
@@ -164,8 +222,56 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
             var pm = await forumService.GetPrivateMessageById(id);
 
-            await forumService.DeletePrivateMessage(pm);
+            if (pm != null)
+            {
+                if (pm.ToUserId != WorkContext.CurrentUser.Id)
+                {
+                    return new HttpUnauthorizedResult();
+                }
 
+                pm.IsDeletedByRecipient = true;
+                await forumService.UpdatePrivateMessage(pm);
+
+                if (pm.IsDeletedByAuthor && pm.IsDeletedByRecipient)
+                {
+                    await forumService.DeletePrivateMessage(pm);
+                }
+            }
+            return RedirectToAction("MailBox");
+        }
+
+        [Route("mailbox/deletesent/{id}")]
+        public async Task<ActionResult> SentPMDelete(int id)
+        {
+            if (!forumSettings.ForumsEnabled)
+            {
+                return RedirectToHomePage();
+            }
+
+            var spm = await forumService.GetPrivateMessageById(id);
+
+            if (spm != null)
+            {
+                if (spm.FromUserId != WorkContext.CurrentUser.Id)
+                {
+                    return new HttpUnauthorizedResult();
+                }
+
+                if (!spm.IsRead)
+                {
+                    await forumService.DeletePrivateMessage(spm);
+                }
+                else
+                {
+                    spm.IsDeletedByAuthor = true;
+                    await forumService.UpdatePrivateMessage(spm);
+
+                    if (spm.IsDeletedByAuthor && spm.IsDeletedByRecipient)
+                    {
+                        await forumService.DeletePrivateMessage(spm);
+                    }
+                }
+            }
             return RedirectToAction("MailBox");
         }
 
@@ -177,19 +283,42 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 return RedirectToHomePage();
             }
 
+            WorkContext.Breadcrumbs.Add("Sent");
+            WorkContext.Breadcrumbs.Add("PM");
+
             var spm = await forumService.GetPrivateMessageById(id);
 
-            var model = new PrivateMessageModel
+            if (spm != null)
             {
-                Id = spm.Id,
-                ToUser = membershipService.GetUserById(spm.ToUserId).Result.UserName,
-                ToUserId = spm.ToUserId,
-                Subject = spm.Subject,
-                Text = spm.Text,
-                CreatedOnUtc = spm.CreatedOnUtc
-            };
+                if (spm.FromUserId != WorkContext.CurrentUser.Id)
+                {
+                    return new HttpUnauthorizedResult();
+                }
 
-            return View(model);
+                var model = new PrivateMessageModel
+                {
+                    Id = spm.Id,
+                    ToUserId = spm.ToUserId,
+                    Subject = spm.Subject,
+                    Text = spm.FormatPrivateMessageText(),
+                    CreatedOnUtc = spm.CreatedOnUtc
+                };
+
+                var toUser = await membershipService.GetUserById(spm.ToUserId);
+                model.ToUser = await membershipService.GetUserDisplayName(toUser);
+
+                var blockedByUser = await forumService.GetBlockedUserById(spm.ToUserId, WorkContext.CurrentUser.Id, true);
+                model.BlockedByUser = blockedByUser != null && blockedByUser.IsBlocked;
+
+                var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, spm.ToUserId);
+                model.HasBlockedUser = blockedUser != null && blockedUser.IsBlocked;
+
+                var friend = await friendService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, spm.ToUserId);
+                model.IsFriend = friend != null;
+
+                return View(model);
+            }
+            return RedirectToAction("MailBox");
         }
 
         [Route("mailbox")]
@@ -202,21 +331,33 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
             var model = new MailBoxModel();
 
-            var privateMessages = await forumService.GetAllPrivateMessages("", WorkContext.CurrentUser.Id, null, null, null, "");
-            var sentMessages = await forumService.GetAllPrivateMessages(WorkContext.CurrentUser.Id, "", null, null, null, "");
+            var privateMessages = await forumService.GetAllPrivateMessages("", WorkContext.CurrentUser.Id, null, null, false, "");
+            var sentMessages = await forumService.GetAllPrivateMessages(WorkContext.CurrentUser.Id, "", null, false, null, "");
 
             foreach (PrivateMessage pm in privateMessages)
             {
                 var pmModel = new PrivateMessageModel
                 {
                     Id = pm.Id,
-                    FromUser = membershipService.GetUserById(pm.FromUserId).Result.UserName,
-                    ToUser = membershipService.GetUserById(WorkContext.CurrentUser.Id).Result.UserName,
                     Subject = pm.Subject,
                     IsRead = pm.IsRead,
                     IsDeletedByAuthor = pm.IsDeletedByAuthor,
-                    CreatedOnUtc = pm.CreatedOnUtc
+                    IsDeletedByRecipient = pm.IsDeletedByRecipient,
+                    CreatedOnUtc = pm.CreatedOnUtc,
+                    FromUserAvatarUrl = await membershipService.GetProfileEntry(pm.FromUserId, "AvatarUrl")
                 };
+
+                var fromUser = await membershipService.GetUserById(pm.FromUserId);
+                pmModel.FromUser = await membershipService.GetUserDisplayName(fromUser);
+
+                var toUser = await membershipService.GetUserById(WorkContext.CurrentUser.Id);
+                pmModel.ToUser = await membershipService.GetUserDisplayName(toUser);
+
+                string isAvatarApprovedValue = await membershipService.GetProfileEntry(pm.FromUserId, "IsAvatarApproved");
+                pmModel.IsFromUserAvatarApproved = bool.Parse(isAvatarApprovedValue);
+
+                pmModel.FromUserAvatarUrl = Kore.Web.Html.HtmlHelper.FormatText(pmModel.FromUserAvatarUrl, false, true, false, true, false, false);
+
                 model.AllPrivateMessages.Add(pmModel);
             }
 
@@ -225,16 +366,26 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 var sPMModel = new PrivateMessageModel
                 {
                     Id = spm.Id,
-                    FromUser = membershipService.GetUserById(spm.FromUserId).Result.UserName,
-                    ToUser = membershipService.GetUserById(spm.ToUserId).Result.UserName,
                     Subject = spm.Subject,
                     IsRead = spm.IsRead,
                     IsDeletedByAuthor = spm.IsDeletedByAuthor,
-                    CreatedOnUtc = spm.CreatedOnUtc
+                    CreatedOnUtc = spm.CreatedOnUtc,
+                    ToUserAvatarUrl = await membershipService.GetProfileEntry(spm.ToUserId, "AvatarUrl")
                 };
+
+                var fromUser = await membershipService.GetUserById(spm.FromUserId);
+                sPMModel.FromUser = await membershipService.GetUserDisplayName(fromUser);
+
+                var toUser = await membershipService.GetUserById(spm.ToUserId);
+                sPMModel.ToUser = await membershipService.GetUserDisplayName(toUser);
+
+                string isAvatarApprovedValue = await membershipService.GetProfileEntry(spm.ToUserId, "IsAvatarApproved");
+                sPMModel.IsToUserAvatarApproved = bool.Parse(isAvatarApprovedValue);
+
+                sPMModel.ToUserAvatarUrl = Kore.Web.Html.HtmlHelper.FormatText(sPMModel.ToUserAvatarUrl, false, true, false, true, false, false);
+
                 model.SentMessages.Add(sPMModel);
             }
-
             return View(model);
         }
 
@@ -246,28 +397,22 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 return RedirectToHomePage();
             }
 
-            var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, blockedUserId, null);
+            var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, blockedUserId);
 
             if (blockedUser == null)
             {
-                var newBU = new BlockedUser()
+                var bu = new BlockedUser()
                 {
                     BlockedByUserId = WorkContext.CurrentUser.Id,
                     BlockedUserId = blockedUserId,
                     IsBlocked = true
                 };
-                await forumService.InsertBlockedUser(newBU);
+                await forumService.InsertBlockedUser(bu);
             }
             else
             {
-                var bu = new BlockedUser()
-                {
-                    Id = blockedUser.Id,
-                    BlockedByUserId = WorkContext.CurrentUser.Id,
-                    BlockedUserId = blockedUserId,
-                    IsBlocked = isBlocked
-                };
-                await forumService.UpdateBlockedUser(bu);
+                blockedUser.IsBlocked = isBlocked;
+                await forumService.UpdateBlockedUser(blockedUser);
             }
 
             string url = Request.UrlReferrer.AbsolutePath;

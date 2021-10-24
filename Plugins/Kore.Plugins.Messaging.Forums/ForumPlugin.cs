@@ -22,11 +22,14 @@ namespace Kore.Plugins.Messaging.Forums
 
             DropTable(dbContext, Constants.Tables.PrivateMessages);
             DropTable(dbContext, Constants.Tables.Subscriptions);
+            DropTable(dbContext, Constants.Tables.UserFlaggedPosts);
             DropTable(dbContext, Constants.Tables.Posts);
             DropTable(dbContext, Constants.Tables.Topics);
             DropTable(dbContext, Constants.Tables.Forums);
             DropTable(dbContext, Constants.Tables.Groups);
             DropTable(dbContext, Constants.Tables.BlockedUsers);
+            DropTable(dbContext, Constants.Tables.Friends);
+            DropTable(dbContext, Constants.Tables.ReportedUsers);
 
             base.Uninstall();
         }

@@ -10,7 +10,13 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public int ForumTopicId { get; set; }
 
+        public string PostId { get; set; }
+
+        public int? ParentPostId { get; set; }
+
         public bool IsEdit { get; set; }
+
+        public bool IsReply { get; set; }
 
         [AllowHtml]
         [Required]

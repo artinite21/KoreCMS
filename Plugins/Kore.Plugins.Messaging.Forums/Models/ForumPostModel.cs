@@ -21,13 +21,35 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public string UserId { get; set; }
 
+        public int? ParentPostId { get; set; }
+
         public bool AllowViewingProfiles { get; set; }
 
         public string UserAvatarUrl { get; set; }
 
+        public bool IsAvatarApproved { get; set; }
+
+        public bool HasBlockedUser { get; set; }
+
+        public bool BlockedByUser { get; set; }
+
+        public bool FlaggedByUser { get; set; }
+
+        public bool IsFlagged { get; set; }
+
+        public bool IsFriend { get; set; }
+
+        public int FlagCount { get; set; }
+
+        public bool IsEdited { get; set; }
+
+        public bool IsDeleted { get; set; }
+
         public string UserName { get; set; }
 
         public bool IsUserForumModerator { get; set; }
+
+        public string PostEditedOnStr { get; set; }
 
         public string PostCreatedOnStr { get; set; }
 
@@ -50,7 +72,5 @@ namespace Kore.Plugins.Messaging.Forums.Models
         public string FormattedSignature { get; set; }
 
         public int CurrentTopicPage { get; set; }
-
-        public BlockedUser BlockedUser { get; set; }
     }
 }

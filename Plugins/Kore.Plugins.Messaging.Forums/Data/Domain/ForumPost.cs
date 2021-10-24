@@ -22,6 +22,16 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
 
         public DateTime UpdatedOnUtc { get; set; }
 
+        public int? ParentPostId { get; set; }
+
+        public string IsFlagged { get; set; }
+
+        public int FlagCount { get; set; }
+
+        public bool IsEdited { get; set; }
+
+        public bool IsDeleted { get; set; }
+
         public virtual ForumTopic ForumTopic { get; set; }
 
         #region IEntity Members
@@ -46,6 +56,11 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
             this.Property(x => x.IPAddress).HasMaxLength(45).IsUnicode(false);
             this.Property(x => x.CreatedOnUtc).IsRequired();
             this.Property(x => x.UpdatedOnUtc).IsRequired();
+            this.Property(x => x.ParentPostId);
+            this.Property(x => x.IsFlagged);
+            this.Property(x => x.FlagCount).IsRequired();
+            this.Property(x => x.IsEdited).IsRequired();
+            this.Property(x => x.IsDeleted).IsRequired();
 
             this.HasRequired(x => x.ForumTopic).WithMany().HasForeignKey(x => x.TopicId);
         }

@@ -43,7 +43,7 @@ namespace Kore.Net.Mail
                         {
                             displayName = smtpSettings.DisplayName;
                         }
-                        mailMessage.From = new MailAddress(smtpSettings.Username, displayName);
+                        mailMessage.From = new MailAddress("support@godofwonders.co.uk", displayName);
                     }
                 }
 

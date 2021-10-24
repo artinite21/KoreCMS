@@ -334,6 +334,7 @@
     <Compile Include="Localization\Services\CultureSelectorResult.cs" />
     <Compile Include="Localization\Services\ICultureSelector.cs" />
     <Compile Include="Localization\Services\SiteCultureSelector.cs" />
+    <Compile Include="Models\FriendModel.cs" />
     <Compile Include="Models\InstallationModel.cs" />
     <Compile Include="Mvc\ActionResults\JsonNetResult.cs" />
     <Compile Include="Mvc\ActionResults\RssActionResult.cs" />
@@ -530,6 +531,12 @@
     <Compile Include="Plugins\PluginFinder.cs" />
     <Compile Include="Plugins\PluginManager.cs" />
     <Compile Include="Areas\Admin\Plugins\PluginsAreaRegistration.cs" />
+    <Compile Include="ProfanityFilter\AllowList.cs" />
+    <Compile Include="ProfanityFilter\Interfaces\IAllowList.cs" />
+    <Compile Include="ProfanityFilter\Interfaces\IProfanityFilter.cs" />
+    <Compile Include="ProfanityFilter\ProfanityBase.cs" />
+    <Compile Include="ProfanityFilter\ProfanityFilter.cs" />
+    <Compile Include="ProfanityFilter\ProfanityList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Security\Membership\AccountUserProfileProvider.cs" />
     <Compile Include="Security\Membership\CurrentUserStateProvider.cs" />
@@ -555,6 +562,10 @@
     <Compile Include="WorkContextExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Kore.Data.ElasticSearch\Kore.Data.ElasticSearch.csproj">
+      <Project>{81359152-f5b4-44f5-b264-df97f12a1f26}</Project>
+      <Name>Kore.Data.ElasticSearch</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Kore.EntityFramework\Kore.EntityFramework.csproj">
       <Project>{2a636196-0b16-484a-8dd8-4bab656dec08}</Project>
       <Name>Kore.EntityFramework</Name>

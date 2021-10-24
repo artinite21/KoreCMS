@@ -1,5 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using Kore.ComponentModel;
+using Kore.Infrastructure;
+using Kore.Plugins.Messaging.Forums.Models;
+using Kore.Security.Membership;
+using Kore.Threading;
+using Kore.Web.Models;
 
 namespace Kore.Web.Identity.Models
 {
@@ -20,6 +26,12 @@ namespace Kore.Web.Identity.Models
 
     public class ManageUserViewModel
     {
+        public ManageUserViewModel()
+        {
+            BlockedUserModels = new List<BlockedUserModel>();
+            FriendModels = new List<FriendModel>();
+        }
+
         [Required]
         [DataType(DataType.Password)]
         [LocalizedDisplayName(LocalizableStrings.OldPassword)]
@@ -35,10 +47,20 @@ namespace Kore.Web.Identity.Models
         [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
         [LocalizedDisplayName(LocalizableStrings.ConfirmNewPassword)]
         public string ConfirmPassword { get; set; }
+
+        public List<BlockedUserModel> BlockedUserModels { get; set; }
+        public List<FriendModel> FriendModels { get; set; }
     }
 
     public class LoginViewModel
     {
+        public LoginViewModel()
+        {
+            IWorkContext workContext = EngineContext.Current.Resolve<IWorkContext>();
+            var membershipService = EngineContext.Current.Resolve<IMembershipService>();
+            UserName = workContext.CurrentUser != null ? AsyncHelper.RunSync(() => membershipService.GetUserDisplayName(workContext.CurrentUser)) : string.Empty;
+        }
+
         [Required]
         [EmailAddress]
         [LocalizedDisplayName(LocalizableStrings.Email)]
@@ -51,6 +73,8 @@ namespace Kore.Web.Identity.Models
 
         [LocalizedDisplayName(LocalizableStrings.RememberMe)]
         public bool RememberMe { get; set; }
+
+        public string UserName { get; set; }
     }
 
     public class RegisterViewModel

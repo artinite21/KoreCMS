@@ -6,6 +6,7 @@
         {
             public const string Permissions = "Permissions";
             public const string UserProfiles = "Kore_UserProfiles";
+            public const string Pastors = "Kore_Pastors";
         }
     }
 }

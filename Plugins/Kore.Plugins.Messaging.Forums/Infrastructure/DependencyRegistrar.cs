@@ -35,6 +35,7 @@ namespace Kore.Plugins.Messaging.Forums.Infrastructure
 
             builder.RegisterType<AutoMenuProvider>().As<IAutoMenuProvider>().SingleInstance();
             builder.RegisterType<ForumService>().As<IForumService>().InstancePerDependency();
+            builder.RegisterType<FriendService>().As<IFriendService>().InstancePerDependency();
         }
 
         public int Order => 9999;

@@ -29,6 +29,7 @@
     ViewBag.Title = settings.PageTitle;
 
     var userNames = (IDictionary<string, string>)ViewBag.UserNames;
+    var userDisplayNames = (IDictionary<string, string>)ViewBag.UserDisplayNames;
     var tags = (IDictionary<int, string>)ViewBag.Tags;
     var tagUrls = (IDictionary<int, string>)ViewBag.TagUrls;
     int pageCount = ViewBag.PageCount;
@@ -62,7 +63,7 @@
                         <p>
                             @Html.Raw(string.Format(
                                 T(KoreCmsLocalizableStrings.Blog.PostedByXOnX),
-                                string.Concat("<strong>", userNames[entry.UserId], "</strong>"),
+                                string.Concat("<strong>", userDisplayNames[entry.UserId], "</strong>"),
                                 string.Concat("<strong>", entry.DateCreatedUtc, "</strong>")))
                         </p>
                         @if (!entry.Tags.IsNullOrEmpty())

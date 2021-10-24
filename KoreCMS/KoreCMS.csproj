@@ -852,6 +852,7 @@
     <Content Include="fonts\fontawesome-webfont.svg" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
+    <Content Include="Media\GOW_Logo.png" />
     <Content Include="Media\installation-background.jpg" />
     <Content Include="Media\kore-logo-dark-small.png" />
     <Content Include="Media\kore-logo-dark.png" />
@@ -2144,6 +2145,10 @@
     <Content Include="Views\_ViewStart.cshtml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Kore.Data.ElasticSearch\Kore.Data.ElasticSearch.csproj">
+      <Project>{81359152-f5b4-44f5-b264-df97f12a1f26}</Project>
+      <Name>Kore.Data.ElasticSearch</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Kore.EntityFramework\Kore.EntityFramework.csproj">
       <Project>{2a636196-0b16-484a-8dd8-4bab656dec08}</Project>
       <Name>Kore.EntityFramework</Name>
@@ -2175,6 +2180,10 @@
     <ProjectReference Include="..\Kore\Kore.csproj">
       <Project>{f5b45103-1be4-401d-a90d-d4cd7a0ac5d4}</Project>
       <Name>Kore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Plugins\Kore.Plugins.Messaging.Forums\Kore.Plugins.Messaging.Forums.csproj">
+      <Project>{29F2DE70-A4B6-4684-9062-FEBE64006446}</Project>
+      <Name>Kore.Plugins.Messaging.Forums</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

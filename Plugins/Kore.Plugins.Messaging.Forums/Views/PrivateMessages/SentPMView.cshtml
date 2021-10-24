@@ -29,7 +29,7 @@
     </div>
 </div>
 <div>
-    <a href="@Url.Action("PMDelete", "PrivateMessages", new { id = Model.Id })" onclick="return confirm('@T(KoreWebLocalizableStrings.General.AreYouSure)');" class="btn btn-primary">
+    <a href="@Url.Action("SentPMDelete", "PrivateMessages", new { id = Model.Id })" onclick="return confirm('@T(KoreWebLocalizableStrings.General.AreYouSure)');" class="btn btn-primary">
         <i class="fa"></i>
         Delete Message
     </a>

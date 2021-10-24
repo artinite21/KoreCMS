@@ -37,6 +37,14 @@ namespace KoreCMS.Messaging
                         "[ConfirmationToken]"
                     };
 
+                case AccountMessageTemplates.Mailbox_Received:
+                    return new[]
+                    {
+                        "[GOWImage]",
+                        "[UserName]",
+                        "[FromUserName]"
+                    };
+
                 default: return Enumerable.Empty<string>();
             }
         }

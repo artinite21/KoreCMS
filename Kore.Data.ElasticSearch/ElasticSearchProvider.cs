@@ -8,7 +8,7 @@ namespace Kore.Data.ElasticSearch
     public abstract class ElasticSearchProvider<T> : IElasticSearchProvider<T>
         where T : class
     {
-        private readonly ElasticClient client;
+        public readonly ElasticClient client;
 
         protected ElasticSearchProvider(string connectionString, string indexPrefix)
         {

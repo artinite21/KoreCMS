@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
+using Kore.Plugins.Messaging.Forums.Services;
 using Kore.Security.Membership;
 using Kore.Web.ContentManagement.Areas.Admin.Messaging.Services;
 using Kore.Web.Identity;
@@ -151,9 +152,9 @@ namespace Kore.Controllers
 
         [Compress]
         [Route("manage")]
-        public override ActionResult Manage(KoreAccountController<ApplicationUser>.ManageMessageId? message)
+        public override async Task<ActionResult> Manage(KoreAccountController<ApplicationUser>.ManageMessageId? message)
         {
-            return base.Manage(message);
+            return await base.Manage(message);
         }
 
         [HttpPost]

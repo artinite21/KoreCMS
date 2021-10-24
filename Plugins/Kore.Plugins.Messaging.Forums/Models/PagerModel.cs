@@ -421,6 +421,15 @@ namespace Kore.Plugins.Messaging.Forums.Models
     }
 
     /// <summary>
+    /// Class that has a slug and page for route values. Used for Site Search pagination
+    /// </summary>
+    public partial class SiteSearchRouteValues : IRouteValues
+    {
+        public string search { get; set; }
+        public int page { get; set; }
+    }
+
+    /// <summary>
     /// Class that has only page for route value. Used for Active Discussions (forums) pagination
     /// </summary>
     public partial class ForumActiveDiscussionsRouteValues : IRouteValues

@@ -8,6 +8,7 @@ using Kore.Collections.Generic;
 using Kore.Data;
 using Kore.Exceptions;
 using Kore.Plugins.Messaging.Forums.Data.Domain;
+using Kore.Plugins.Messaging.Forums.Models;
 using Kore.Security.Membership;
 using Kore.Web.Configuration.Services;
 
@@ -28,6 +29,8 @@ namespace Kore.Plugins.Messaging.Forums.Services
         private readonly IRepository<ForumSubscription> forumSubscriptionRepository;
         private readonly IRepository<ForumTopic> forumTopicRepository;
         private readonly IRepository<PrivateMessage> forumPrivateMessageRepository;
+        private readonly IRepository<ReportedUser> reportedUserRepository;
+        private readonly IRepository<UserFlaggedPost> userFlaggedPostRepository;
         private readonly IWorkContext workContext;
 
         private const string CacheKey_ForumGroupAll = "Kore.ForumGroup.Tenant_{0}.All";
@@ -51,7 +54,9 @@ namespace Kore.Plugins.Messaging.Forums.Services
             IRepository<ForumSubscription> forumSubscriptionRepository,
             IRepository<ForumTopic> forumTopicRepository,
             IRepository<PrivateMessage> forumPrivateMessageRepository,
-            IWorkContext workContext)
+            IRepository<ReportedUser> reportedUserRepository,
+        IRepository<UserFlaggedPost> userFlaggedPostRepository,
+        IWorkContext workContext)
         {
             this.cacheManager = cacheManager;
             this.blockedUserRepository = blockedUserRepository;
@@ -62,6 +67,8 @@ namespace Kore.Plugins.Messaging.Forums.Services
             this.forumSettings = forumSettings;
             this.forumSubscriptionRepository = forumSubscriptionRepository;
             this.forumTopicRepository = forumTopicRepository;
+            this.reportedUserRepository = reportedUserRepository;
+            this.userFlaggedPostRepository = userFlaggedPostRepository;
             this.genericAttributeService = genericAttributeService;
             this.membershipService = membershipService;
             this.workContext = workContext;
@@ -527,6 +534,53 @@ namespace Kore.Plugins.Messaging.Forums.Services
             //_eventPublisher.EntityDeleted(forumPost);
         }
 
+        public virtual async Task<UserFlaggedPost> GetUserFlaggedPostById(string userId, int topicid, int postId)
+        {
+            UserFlaggedPost userFlaggedPost;
+            using (var connection = userFlaggedPostRepository.OpenConnection())
+            {
+                userFlaggedPost = await connection.Query(x => x.UserId == userId && x.TopicId == topicid && x.PostId == postId).FirstOrDefaultAsync();
+            }
+
+            if (userFlaggedPost == null)
+            {
+                return null;
+            }
+
+            return userFlaggedPost;
+        }
+
+        public virtual async Task DeleteUserFlaggedPost(UserFlaggedPost userFlaggedPost)
+        {
+            if (userFlaggedPost == null)
+            {
+                throw new ArgumentNullException("userFlaggedPost");
+            }
+
+            await userFlaggedPostRepository.DeleteAsync(userFlaggedPost);
+
+            //event notification
+            //_eventPublisher.EntityDeleted(privateMessage);
+        }
+
+        public virtual async Task DeleteUserFlaggedPostsById(int topicId, int postId)
+        {
+            using (var connection = userFlaggedPostRepository.OpenConnection())
+            {
+                await userFlaggedPostRepository.DeleteAsync(connection.Query(x => x.TopicId == topicId && x.PostId == postId));
+            }
+        }
+
+        public virtual async Task InsertUserFlaggedPost(UserFlaggedPost userFlaggedPost)
+        {
+            if (userFlaggedPost == null)
+            {
+                throw new ArgumentNullException("userFlaggedPost");
+            }
+
+            await userFlaggedPostRepository.InsertAsync(userFlaggedPost);
+        }
+
         public virtual async Task<ForumPost> GetPostById(int forumPostId)
         {
             if (forumPostId == 0)
@@ -755,18 +809,9 @@ namespace Kore.Plugins.Messaging.Forums.Services
                 throw new ArgumentNullException("privateMessage");
             }
 
-            if (privateMessage.IsDeletedByAuthor && privateMessage.IsDeletedByRecipient)
-            {
-                await forumPrivateMessageRepository.DeleteAsync(privateMessage);
-                //event notification
-                //_eventPublisher.EntityDeleted(privateMessage);
-            }
-            else
-            {
-                await forumPrivateMessageRepository.UpdateAsync(privateMessage);
-                //event notification
-                //_eventPublisher.EntityUpdated(privateMessage);
-            }
+            await forumPrivateMessageRepository.UpdateAsync(privateMessage);
+            //event notification
+            //_eventPublisher.EntityUpdated(privateMessage);
         }
 
         public virtual async Task DeleteSubscription(ForumSubscription forumSubscription)
@@ -951,11 +996,11 @@ namespace Kore.Plugins.Messaging.Forums.Services
                 return true;
             }
 
-            if (forumSettings.AllowUsersToDeletePosts)
-            {
-                bool ownTopic = user.Id == topic.UserId;
-                return ownTopic;
-            }
+            //if (forumSettings.AllowUsersToDeletePosts)
+            //{
+            //    bool ownTopic = user.Id == topic.UserId;
+            //    return ownTopic;
+            //}
 
             return false;
         }
@@ -1124,7 +1169,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
             //_eventPublisher.EntityDeleted(blockedUser);  
         }
 
-        public virtual async Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked)
+        public virtual async Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked = default)
         {
             BlockedUser blockedUser;
             using (var connection = blockedUserRepository.OpenConnection())
@@ -1162,7 +1207,35 @@ namespace Kore.Plugins.Messaging.Forums.Services
                 }
                 query = query.OrderByDescending(bu => bu.BlockedByUserId);
 
-                return await Task.FromResult(new PagedList<BlockedUser>(query, pageIndex, pageSize)); ;
+                return await Task.FromResult(new PagedList<BlockedUser>(query, pageIndex, pageSize));
+            }
+        }
+
+        public virtual async Task InsertReportedUser(ReportedUser reportedUser)
+        {
+            if (reportedUser == null)
+            {
+                throw new ArgumentNullException("reportedUser");
+            }
+
+            await reportedUserRepository.InsertAsync(reportedUser);
+
+            var reportedUserTo = await membershipService.GetUserById(reportedUser.ReportedUserId);
+            if (reportedUserTo == null)
+            {
+                throw new KoreException("Recipient could not be loaded");
+            }
+        }
+
+        public virtual async Task<IPagedList<ReportedUser>> GetAllReportedUsers(int pageIndex = 0, int pageSize = int.MaxValue)
+        {
+            using (var reportedUserConnection = reportedUserRepository.OpenConnection())
+            {
+                var query = reportedUserConnection.Query();
+
+                query = query.OrderByDescending(ru => ru.ReportedUserId);
+
+                return await Task.FromResult(new PagedList<ReportedUser>(query, pageIndex, pageSize));
             }
         }
 

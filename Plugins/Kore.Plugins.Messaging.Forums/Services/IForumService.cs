@@ -34,7 +34,15 @@ namespace Kore.Plugins.Messaging.Forums.Services
 
         Task<ForumTopic> GetTopicById(int forumTopicId, bool increaseViews);
 
-        Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked);
+        Task<UserFlaggedPost> GetUserFlaggedPostById(string userId, int topicId, int postId);
+
+        Task DeleteUserFlaggedPost(UserFlaggedPost userFlaggedPost);
+
+        Task DeleteUserFlaggedPostsById(int topicId, int postId);
+
+        Task InsertUserFlaggedPost(UserFlaggedPost userFlaggedPost);
+
+        Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked = default);
 
         Task<IPagedList<BlockedUser>> GetAllBlockedUsers(
             string blockedByUserId,
@@ -44,6 +52,12 @@ namespace Kore.Plugins.Messaging.Forums.Services
         Task InsertBlockedUser(BlockedUser blockedUser);
 
         Task UpdateBlockedUser(BlockedUser blockedUser);
+
+        Task InsertReportedUser(ReportedUser reportedUser);
+
+        Task<IPagedList<ReportedUser>> GetAllReportedUsers(
+            int pageIndex = 0,
+            int pageSize = int.MaxValue);
 
         Task<IPagedList<ForumTopic>> GetAllTopics(
             int forumId = 0,

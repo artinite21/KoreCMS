@@ -30,11 +30,14 @@
             {
                 <div class="alert alert-danger message-error" role="alert">
                     @validationSummary
-                </div> 
+                </div>
             }
             @Html.HiddenFor(x => x.Id)
             @Html.HiddenFor(x => x.ForumTopicId)
+            @Html.HiddenFor(x => x.PostId)
+            @Html.HiddenFor(x => x.ParentPostId)
             @Html.HiddenFor(x => x.IsEdit)
+            @Html.HiddenFor(x => x.IsReply)
             <div class="fieldset">
                 <div class="form-fields">
                     <div class="form-group inputs">
@@ -68,7 +71,7 @@
             </div>
             <div class="buttons">
                 <input type="submit" value="@T(KoreWebLocalizableStrings.General.Submit)" class="btn btn-primary submit-post-button" />
-                <input type="button" class="btn btn-default cancel-post-button" value="@T(KoreWebLocalizableStrings.General.Cancel)" onclick="setLocation('@Url.Action("Topic", new { id = Model.ForumTopicId, slug = Model.ForumTopicSeName })')" />
+                <input type="button" class="btn btn-default cancel-post-button" value="@T(KoreWebLocalizableStrings.General.Cancel)" onclick="location.href='@Url.Action("Topic", new { id = Model.ForumTopicId, slug = Model.ForumTopicSeName })'" />
             </div>
         }
     </div>

@@ -16,13 +16,13 @@
     <div class="row forum-info">
         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
             <div class="forum-name">
-                @if (Model.ForumFeedsEnabled)
-                {
-                    <a href="@Url.Action("ForumRss", new { id = Model.Id })" class="btn btn-link btn-xs link-rss" title="@T(LocalizableStrings.ForumRSSLinkTitle)">
-                        <i class="fa fa-rss"></i>
-                        @T(LocalizableStrings.RSS)
-                    </a>
-                }
+                @*@if (Model.ForumFeedsEnabled)
+                    {
+                        <a href="@Url.Action("ForumRss", new { id = Model.Id })" class="btn btn-link btn-xs link-rss" title="@T(LocalizableStrings.ForumRSSLinkTitle)">
+                            <i class="fa fa-rss"></i>
+                            @T(LocalizableStrings.RSS)
+                        </a>
+                    }*@
                 <h1>@Model.Name</h1>
             </div>
             <div class="forum-description">
@@ -97,9 +97,9 @@
                         <colgroup>
                             <col width="1" />
                             <col />
-                            <col width="1" />
-                            <col width="1" />
-                            <col width="1" />
+                            <col width="100" />
+                            <col width="100" />
+                            <col width="150" />
                         </colgroup>
                         <thead>
                             <tr>

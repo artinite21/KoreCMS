@@ -4,8 +4,6 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using Kore.Infrastructure;
 using Kore.Web;
-using Kore.Web.Infrastructure;
-using Kore.Web.Php.ViewEngines;
 using NLog;
 using NLog.Targets;
 using NLog.Targets.Wrappers;

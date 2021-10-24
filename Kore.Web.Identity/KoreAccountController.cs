@@ -326,7 +326,7 @@ namespace Kore.Web.Identity
         // GET: /Account/Manage
         [Compress]
         [Route("manage")]
-        public virtual ActionResult Manage(ManageMessageId? message)
+        public virtual async Task<ActionResult> Manage(ManageMessageId? message)
         {
             ViewBag.StatusMessage =
                 message == ManageMessageId.ChangePasswordSuccess ? T(LocalizableStrings.ManageMessages.ChangePasswordSuccess)
@@ -336,6 +336,7 @@ namespace Kore.Web.Identity
                 : string.Empty;
             ViewBag.HasLocalPassword = HasPassword();
             ViewBag.ReturnUrl = Url.Action("Manage");
+
             return View();
         }
 
