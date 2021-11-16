@@ -79,7 +79,7 @@ namespace Kore.Web.Identity
                 {
                     var authorizedUser = await UserManager.FindAsync(user.UserName, model.Password);
 
-                    if (authorizedUser != null)
+                    if (authorizedUser != null && UserManager.IsEmailConfirmed(authorizedUser.Id) && !authorizedUser.LockoutEnabled)
                     {
                         await SignInAsync(authorizedUser, model.RememberMe);
                         return RedirectToLocal(returnUrl);
@@ -116,11 +116,17 @@ namespace Kore.Web.Identity
         {
             if (ModelState.IsValid)
             {
-                var user = new TUser() { UserName = model.Email, Email = model.Email };
+                var user = new TUser()
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    TenantId = WorkContext.CurrentTenant.Id
+                };
+
                 IdentityResult result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    await SignInAsync(user, isPersistent: false);
+                    //await SignInAsync(user, isPersistent: false);
 
                     // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=320771
                     // Send an email with this link

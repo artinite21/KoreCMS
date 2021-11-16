@@ -104,7 +104,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 UserId = topic.UserId,
                 //AllowViewingProfiles = _customerSettings.AllowViewingProfiles, //TODO
                 AllowViewingProfiles = true,
-                UserName = await membershipService.GetUserDisplayName(user)
+                UserName = user != null ? await membershipService.GetUserDisplayName(user) : "No longer a registered user."
             };
 
             var posts = await forumService.GetAllPosts(topic.Id, null, string.Empty, 1, forumSettings.PostsPageSize);
@@ -867,6 +867,9 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string subject = model.Subject;
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
+                    var subjectFilter = new ProfanityFilter();
+                    subject = subjectFilter.CensorString(subject);
+
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
                         subject = subject.Substring(0, maxSubjectLength);
@@ -874,6 +877,9 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
                     string text = model.Text;
                     int maxPostLength = forumSettings.PostMaxLength;
+
+                    var filter = new ProfanityFilter();
+                    text = filter.CensorString(text);
 
                     if (maxPostLength > 0 && text.Length > maxPostLength)
                     {
@@ -911,7 +917,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         Text = text,
                         IPAddress = ipAddress,
                         CreatedOnUtc = nowUtc,
-                        UpdatedOnUtc = nowUtc
+                        UpdatedOnUtc = nowUtc,
+                        IsFlagged = bool.FalseString
                     };
                     await forumService.InsertPost(post, false);
 
@@ -1053,6 +1060,9 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string subject = model.Subject;
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
+                    var subjectFilter = new ProfanityFilter();
+                    subject = subjectFilter.CensorString(subject);
+
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
                         subject = subject.Substring(0, maxSubjectLength);
@@ -1060,6 +1070,9 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
                     string text = model.Text;
                     int maxPostLength = forumSettings.PostMaxLength;
+
+                    var textFilter = new ProfanityFilter();
+                    text = subjectFilter.CensorString(text);
 
                     if (maxPostLength > 0 && text.Length > maxPostLength)
                     {
@@ -1100,7 +1113,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                             UserId = topic.UserId,
                             Text = text,
                             IPAddress = ipAddress,
-                            UpdatedOnUtc = nowUtc
+                            UpdatedOnUtc = nowUtc,
+                            IsFlagged = bool.FalseString
                         };
 
                         await forumService.InsertPost(firstPost, false);

@@ -138,6 +138,7 @@ namespace Kore.Web.Identity
             usersTable.HasMany(x => x.Roles).WithRequired().HasForeignKey(x => x.UserId);
             usersTable.HasMany(x => x.Claims).WithRequired().HasForeignKey(x => x.UserId);
             usersTable.HasMany(x => x.Logins).WithRequired().HasForeignKey(x => x.UserId);
+            usersTable.HasMany(x => x.ForumPosts).WithRequired().HasForeignKey(x => x.UserId);
 
             usersTable.Property(x => x.TenantId)
                 .HasColumnAnnotation("Index", new IndexAnnotation(new IndexAttribute("UserNameIndex") { IsUnique = true, Order = 1 }));

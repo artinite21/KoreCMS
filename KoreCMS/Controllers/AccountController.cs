@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using Kore.Plugins.Messaging.Forums.Services;
 using Kore.Security.Membership;
 using Kore.Web.ContentManagement.Areas.Admin.Messaging.Services;
 using Kore.Web.Identity;

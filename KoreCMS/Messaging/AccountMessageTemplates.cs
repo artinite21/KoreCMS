@@ -10,6 +10,7 @@ namespace KoreCMS.Messaging
         public const string Account_Confirmed = "Account: Confirmed";
         public const string Account_PasswordReset = "Account: Password Reset";
         public const string Account_ProfileChanged = "Account: Profile Changed";
+        public const string Account_Deleted = "Account: Deleted";
         public const string Mailbox_Received = "Mailbox: Received";
 
         #region IMessageTemplatesProvider Members
@@ -20,6 +21,7 @@ namespace KoreCMS.Messaging
             yield return new MessageTemplate(Account_Confirmed, "Account Confirmed");
             yield return new MessageTemplate(Account_PasswordReset, "Password Reset");
             yield return new MessageTemplate(Account_ProfileChanged, "Profile Changed");
+            yield return new MessageTemplate(Account_Deleted, "Account Deleted");
             yield return new MessageTemplate(Mailbox_Received, "New Message Received!");
         }
 

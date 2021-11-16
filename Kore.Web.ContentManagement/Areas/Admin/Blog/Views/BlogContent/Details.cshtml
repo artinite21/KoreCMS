@@ -1,6 +1,9 @@
 ﻿@using Kore.Infrastructure
 @using Kore.Web.ContentManagement.Areas.Admin.Blog
 @using Kore.Web.ContentManagement.Areas.Admin.Blog.Domain
+@using Kore.Threading;
+@using Kore.Security.Membership;
+@using Kore.Web.Configuration;
 @model BlogPost
 
 @{
@@ -12,7 +15,28 @@
     }
     else
     {
-        Layout = KoreWebConstants.DefaultFrontendLayoutPath;
+        if (WorkContext.CurrentUser != null)
+        {
+            var siteSettings = EngineContext.Current.Resolve<KoreSiteSettings>();
+            var membershipService = EngineContext.Current.Resolve<IMembershipService>();
+            var profile = AsyncHelper.RunSync(() => membershipService.GetProfile(WorkContext.CurrentUser.Id));
+            string preferredTheme = profile["PreferredTheme"];
+
+            if (!string.IsNullOrEmpty(preferredTheme) &&
+                preferredTheme != siteSettings.DefaultDesktopTheme &&
+                preferredTheme != siteSettings.DefaultMobileTheme)
+            {
+                Layout = string.Format("~/Themes/{0}/Views/Shared/_Layout.cshtml", preferredTheme);
+            }
+            else
+            {
+                Layout = KoreWebConstants.DefaultFrontendLayoutPath;
+            }
+        }
+        else
+        {
+            Layout = KoreWebConstants.DefaultFrontendLayoutPath;
+        }
     }
 
     ViewBag.Title = Model.Headline;

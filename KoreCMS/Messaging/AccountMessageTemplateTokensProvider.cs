@@ -37,6 +37,12 @@ namespace KoreCMS.Messaging
                         "[ConfirmationToken]"
                     };
 
+                case AccountMessageTemplates.Account_Deleted:
+                    return new[]
+                    {
+                        "[UserName]"
+                    };
+
                 case AccountMessageTemplates.Mailbox_Received:
                     return new[]
                     {

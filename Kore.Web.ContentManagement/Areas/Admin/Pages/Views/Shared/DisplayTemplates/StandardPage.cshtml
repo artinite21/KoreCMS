@@ -1,7 +1,35 @@
-﻿@model Kore.Web.ContentManagement.Areas.Admin.Pages.StandardPage
+﻿@using Kore.Infrastructure
+@using Kore.Threading
+@using Kore.Security.Membership;
+@using Kore.Web.Configuration;
+@model Kore.Web.ContentManagement.Areas.Admin.Pages.StandardPage
 
 @{
-    Layout = Model.LayoutPath;
+    //Layout = Model.LayoutPath;
+
+    if (WorkContext.CurrentUser != null)
+    {
+        var siteSettings = EngineContext.Current.Resolve<KoreSiteSettings>();
+        var membershipService = EngineContext.Current.Resolve<IMembershipService>();
+        var profile = AsyncHelper.RunSync(() => membershipService.GetProfile(WorkContext.CurrentUser.Id));
+        string preferredTheme = profile["PreferredTheme"];
+
+        if (!string.IsNullOrEmpty(preferredTheme) &&
+            preferredTheme != siteSettings.DefaultDesktopTheme &&
+            preferredTheme != siteSettings.DefaultMobileTheme)
+        {
+            Layout = string.Format("~/Themes/{0}/Views/Shared/_Layout.cshtml", preferredTheme);
+        }
+        else
+        {
+            Layout = Model.LayoutPath;
+        }
+    }
+    else
+    {
+        Layout = Model.LayoutPath;
+    }
+
     ViewBag.Title = string.IsNullOrWhiteSpace(Model.InstanceName) ? Model.MetaTitle : Model.InstanceName;
     SetMeta("keywords", Model.MetaKeywords);
     SetMeta("description", Model.MetaDescription);

@@ -5,5 +5,5 @@
 
 <div class="form-group">
     @Html.LabelFor(m => m.PreferredLanguage, new { @class = "control-label" })
-    @Html.Kore().LanguagesDropDownListFor(m => m.PreferredLanguage, new { @class = "form-control", disabled = "disabled" })
+    @Html.Kore().LanguagesDropDownListFor(m => m.PreferredLanguage, new { @class = "form-control", disabled = "disabled" }, includeDefault: true)
 </div>
