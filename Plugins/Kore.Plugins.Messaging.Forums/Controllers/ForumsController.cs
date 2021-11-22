@@ -867,8 +867,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string subject = model.Subject;
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
-                    var subjectFilter = new ProfanityFilter();
-                    subject = subjectFilter.CensorString(subject);
+                    var filter = new ProfanityFilter();
+                    subject = "[CENSORED] " + filter.CensorString(subject);
 
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
@@ -878,7 +878,6 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string text = model.Text;
                     int maxPostLength = forumSettings.PostMaxLength;
 
-                    var filter = new ProfanityFilter();
                     text = filter.CensorString(text);
 
                     if (maxPostLength > 0 && text.Length > maxPostLength)
@@ -929,6 +928,20 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     topic.LastPostTime = post.CreatedOnUtc;
                     topic.UpdatedOnUtc = nowUtc;
                     await forumService.UpdateTopic(topic);
+
+                    //insert forum topic post into elastic search index
+                    var forumPostModel = new ForumPostModel
+                    {
+                        Id = post.Id,
+                        ForumTopicId = post.TopicId,
+                        FormattedText = post.FormatPostText(),
+                        UserName = await membershipService.GetUserDisplayName(WorkContext.CurrentUser),
+                        PostCreatedOnStr = dateTimeHelper.ConvertToUserTime(post.CreatedOnUtc, DateTimeKind.Utc).ToString("f")
+                    };
+
+                    forumPostModel.ForumTopicSeName = topic.GetSeName();
+
+                    forumPostElasticProvider.client.Index(forumPostModel, i => i.Index("forumpostmodels"));
 
                     //subscription
                     if (await forumService.IsUserAllowedToSubscribe(WorkContext.CurrentUser))
@@ -1060,8 +1073,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string subject = model.Subject;
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
-                    var subjectFilter = new ProfanityFilter();
-                    subject = subjectFilter.CensorString(subject);
+                    var filter = new ProfanityFilter();
+                    subject = "[CENSORED] " + filter.CensorString(subject);
 
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
@@ -1071,8 +1084,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     string text = model.Text;
                     int maxPostLength = forumSettings.PostMaxLength;
 
-                    var textFilter = new ProfanityFilter();
-                    text = subjectFilter.CensorString(text);
+                    text = filter.CensorString(text);
 
                     if (maxPostLength > 0 && text.Length > maxPostLength)
                     {
@@ -1119,6 +1131,20 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
                         await forumService.InsertPost(firstPost, false);
                     }
+
+                    //update forum topic post in elastic search index
+                    var forumPostModel = new ForumPostModel
+                    {
+                        Id = firstPost.Id,
+                        ForumTopicId = firstPost.TopicId,
+                        FormattedText = firstPost.FormatPostText(),
+                        UserName = await membershipService.GetUserDisplayName(WorkContext.CurrentUser),
+                        PostCreatedOnStr = dateTimeHelper.ConvertToUserTime(firstPost.CreatedOnUtc, DateTimeKind.Utc).ToString("f")
+                    };
+
+                    forumPostModel.ForumTopicSeName = topic.GetSeName();
+
+                    forumPostElasticProvider.client.Update<ForumPostModel>(firstPost.Id, x => x.Index("forumpostmodels").Doc(forumPostModel));
 
                     //subscription
                     if (await forumService.IsUserAllowedToSubscribe(WorkContext.CurrentUser))
@@ -1216,6 +1242,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 post.IsDeleted = true;
                 await forumService.UpdatePost(post);
 
+                //delete forum post from elastic search index
                 forumPostElasticProvider.client.Delete<ForumPostModel>(post.Id, x => x.Index("forumpostmodels"));
 
                 //await forumService.DeletePost(post);
@@ -1367,6 +1394,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     };
                     await forumService.InsertPost(post, true);
 
+                    //insert forum post into elastic search index
                     var forumPostModel = new ForumPostModel
                     {
                         Id = post.Id,
@@ -1507,6 +1535,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     };
                     await forumService.InsertPost(replyPost, true);
 
+                    //insert forum reply post into elastic search index
                     var forumPostModel = new ForumPostModel
                     {
                         Id = replyPost.Id,
@@ -1765,6 +1794,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     post.IsEdited = true;
                     await forumService.UpdatePost(post);
 
+                    //update forum post in elastic search index
                     var forumPostModel = new ForumPostModel
                     {
                         Id = post.Id,

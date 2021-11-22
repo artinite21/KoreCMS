@@ -335,7 +335,6 @@
     <Compile Include="Localization\Services\CultureSelectorResult.cs" />
     <Compile Include="Localization\Services\ICultureSelector.cs" />
     <Compile Include="Localization\Services\SiteCultureSelector.cs" />
-    <Compile Include="Models\FriendModel.cs" />
     <Compile Include="Models\InstallationModel.cs" />
     <Compile Include="Mvc\ActionResults\JsonNetResult.cs" />
     <Compile Include="Mvc\ActionResults\RssActionResult.cs" />

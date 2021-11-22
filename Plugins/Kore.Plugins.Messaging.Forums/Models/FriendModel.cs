@@ -1,4 +1,4 @@
-﻿namespace Kore.Web.Models
+﻿namespace Kore.Plugins.Messaging.Forums.Models
 {
     public class FriendModel
     {

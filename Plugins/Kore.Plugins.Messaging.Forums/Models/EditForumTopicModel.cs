@@ -26,7 +26,6 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public EditorType ForumEditor { get; set; }
 
-        [AllowHtml]
         [Required]
         public string Subject { get; set; }
 

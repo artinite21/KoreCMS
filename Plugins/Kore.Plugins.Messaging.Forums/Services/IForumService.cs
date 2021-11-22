@@ -104,6 +104,8 @@ namespace Kore.Plugins.Messaging.Forums.Services
 
         Task DeletePrivateMessage(PrivateMessage privateMessage);
 
+        Task DeletePrivateMessagesById(string userId);
+
         Task<PrivateMessage> GetPrivateMessageById(int privateMessageId);
 
         Task<IPagedList<PrivateMessage>> GetAllPrivateMessages(

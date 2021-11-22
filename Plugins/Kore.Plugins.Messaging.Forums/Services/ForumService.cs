@@ -718,6 +718,16 @@ namespace Kore.Plugins.Messaging.Forums.Services
             //_eventPublisher.EntityDeleted(privateMessage);
         }
 
+        public virtual async Task DeletePrivateMessagesById(string userId)
+        {
+            if (userId == null)
+            {
+                throw new ArgumentNullException("privateMessage");
+            }
+
+            await forumPrivateMessageRepository.DeleteAsync(x => x.FromUserId == userId || x.ToUserId == userId);
+        }
+
         public virtual async Task<PrivateMessage> GetPrivateMessageById(int privateMessageId)
         {
             if (privateMessageId == 0)

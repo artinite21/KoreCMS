@@ -204,6 +204,7 @@
     <Compile Include="LocalizableStrings.cs" />
     <Compile Include="Models\ActiveDiscussionsModel.cs" />
     <Compile Include="Models\BlockedUserModel.cs" />
+    <Compile Include="Models\FriendModel.cs" />
     <Compile Include="Models\IndexModel.cs" />
     <Compile Include="Models\MailBoxModel.cs" />
     <Compile Include="Models\PagerModel.cs" />

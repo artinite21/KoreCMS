@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Threading.Tasks;
-using Kore.Plugins.Messaging.Forums.Data.Domain;
 using Kore.Tenants.Domain;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
@@ -11,7 +9,6 @@ namespace Kore.Web.Identity.Domain
     public abstract class KoreIdentityUser : IdentityUser, ITenantEntity
     {
         public int? TenantId { get; set; }
-        public virtual ICollection<ForumPost> ForumPosts { get; }
 
         #region IEntity Members
 
