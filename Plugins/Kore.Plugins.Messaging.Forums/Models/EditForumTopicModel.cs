@@ -29,7 +29,7 @@ namespace Kore.Plugins.Messaging.Forums.Models
         [Required]
         public string Subject { get; set; }
 
-        [AllowHtml]
+        //[AllowHtml]
         [Required]
         public string Text { get; set; }
 

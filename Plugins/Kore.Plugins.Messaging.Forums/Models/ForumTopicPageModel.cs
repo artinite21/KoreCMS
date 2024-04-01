@@ -25,6 +25,8 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public bool IsUserAllowedToSubscribe { get; set; }
 
+        public bool IsUserAllowedToLockTopic { get; set; }
+
         public IList<ForumPostModel> ForumPostModels { get; set; }
 
         public int PostsPageIndex { get; set; }
@@ -32,5 +34,7 @@ namespace Kore.Plugins.Messaging.Forums.Models
         public int PostsPageSize { get; set; }
 
         public int PostsTotalRecords { get; set; }
+
+        public bool IsLocked { get; set; }
     }
 }

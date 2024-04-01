@@ -28,6 +28,10 @@ namespace Kore.Plugins.Messaging.Forums.Models
             public string Title { get; set; }
 
             public string Slug { get; set; }
+
+            public string ForumTitle { get; set; }
+
+            public string ForumSlug { get; set; }
         }
 
         #endregion Nested classes

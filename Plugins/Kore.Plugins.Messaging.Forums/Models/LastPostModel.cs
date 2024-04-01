@@ -19,5 +19,7 @@
         public string PostCreatedOnStr { get; set; }
 
         public bool ShowTopic { get; set; }
+
+        public bool IsRegisteredUser { get; set; }
     }
 }

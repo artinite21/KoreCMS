@@ -22,7 +22,6 @@ namespace Kore.Plugins.Messaging.Forums.Services
         private readonly ICacheManager cacheManager;
         private readonly IGenericAttributeService genericAttributeService;
         private readonly IMembershipService membershipService;
-        private readonly IRepository<BlockedUser> blockedUserRepository;
         private readonly IRepository<Forum> forumRepository;
         private readonly IRepository<ForumGroup> forumGroupRepository;
         private readonly IRepository<ForumPost> forumPostRepository;
@@ -47,7 +46,6 @@ namespace Kore.Plugins.Messaging.Forums.Services
             ICacheManager cacheManager,
             IGenericAttributeService genericAttributeService,
             IMembershipService membershipService,
-            IRepository<BlockedUser> blockedUserRepository,
             IRepository<Forum> forumRepository,
             IRepository<ForumGroup> forumGroupRepository,
             IRepository<ForumPost> forumPostRepository,
@@ -59,7 +57,6 @@ namespace Kore.Plugins.Messaging.Forums.Services
         IWorkContext workContext)
         {
             this.cacheManager = cacheManager;
-            this.blockedUserRepository = blockedUserRepository;
             this.forumGroupRepository = forumGroupRepository;
             this.forumPostRepository = forumPostRepository;
             this.forumPrivateMessageRepository = forumPrivateMessageRepository;
@@ -495,34 +492,34 @@ namespace Kore.Plugins.Messaging.Forums.Services
                 throw new ArgumentNullException("forumPost");
             }
 
-            int forumTopicId = forumPost.TopicId;
+            //int forumTopicId = forumPost.TopicId;
             string userId = forumPost.UserId;
-            var forumTopic = await GetTopicById(forumTopicId);
-            int forumId = forumTopic.ForumId;
+            //var forumTopic = await GetTopicById(forumTopicId);
+            //int forumId = forumTopic.ForumId;
 
-            //delete topic if it was the first post
-            bool deleteTopic = false;
-            ForumPost firstPost = forumTopic.GetFirstPost(this);
-            if (firstPost != null && firstPost.Id == forumPost.Id)
-            {
-                deleteTopic = true;
-            }
+            ////delete topic if it was the first post
+            //bool deleteTopic = false;
+            //ForumPost firstPost = forumTopic.GetFirstPost(this);
+            //if (firstPost != null && firstPost.Id == forumPost.Id)
+            //{
+            //    deleteTopic = true;
+            //}
 
-            //delete forum post
-            await forumPostRepository.DeleteAsync(forumPost);
+            ////delete forum post
+            //await forumPostRepository.DeleteAsync(forumPost);
 
-            //delete topic
-            if (deleteTopic)
-            {
-                await DeleteTopic(forumTopic);
-            }
+            ////delete topic
+            //if (deleteTopic)
+            //{
+            //    await DeleteTopic(forumTopic);
+            //}
 
-            //update stats
-            if (!deleteTopic)
-            {
-                await UpdateForumTopicStats(forumTopicId);
-            }
-            await UpdateForumStats(forumId);
+            ////update stats
+            //if (!deleteTopic)
+            //{
+            //    await UpdateForumTopicStats(forumTopicId);
+            //}
+            //await UpdateForumStats(forumId);
             await UpdateUserStats(userId);
 
             //clear cache
@@ -718,7 +715,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
             //_eventPublisher.EntityDeleted(privateMessage);
         }
 
-        public virtual async Task DeletePrivateMessagesById(string userId)
+        public virtual async Task DeletePrivateMessagesByUserId(string userId)
         {
             if (userId == null)
             {
@@ -1015,9 +1012,34 @@ namespace Kore.Plugins.Messaging.Forums.Services
             return false;
         }
 
-        public virtual async Task<bool> IsUserAllowedToCreatePost(KoreUser user, ForumTopic topic)
+        public virtual async Task<bool> IsUserAllowedToLockTopic(KoreUser user, ForumTopic topic)
         {
             if (topic == null)
+            {
+                return false;
+            }
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            //if (user.IsGuest())
+            //{
+            //    return false;
+            //}
+
+            if (await IsForumModerator(user))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public virtual async Task<bool> IsUserAllowedToCreatePost(KoreUser user, ForumTopic topic)
+        {
+            if (topic == null || topic.IsLocked)
             {
                 return false;
             }
@@ -1151,74 +1173,14 @@ namespace Kore.Plugins.Messaging.Forums.Services
             return pageIndex;
         }
 
-        public virtual async Task InsertBlockedUser(BlockedUser blockedUser)
+        public virtual async Task DeleteReportedUserById(int reportedUserId)
         {
-            if (blockedUser == null)
+            if (reportedUserId == 0)
             {
-                throw new ArgumentNullException("blockedUser");
+                return;
             }
 
-            await blockedUserRepository.InsertAsync(blockedUser);
-
-            var blockedUserTo = await membershipService.GetUserById(blockedUser.BlockedUserId);
-            if (blockedUserTo == null)
-            {
-                throw new KoreException("Recipient could not be loaded");
-            }
-        }
-
-        public virtual async Task UpdateBlockedUser(BlockedUser blockedUser)
-        {
-            if (blockedUser == null)
-            {
-                throw new ArgumentNullException("blockedUser");
-            }
-
-            await blockedUserRepository.UpdateAsync(blockedUser);
-            //event notification
-            //_eventPublisher.EntityDeleted(blockedUser);  
-        }
-
-        public virtual async Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked = default)
-        {
-            BlockedUser blockedUser;
-            using (var connection = blockedUserRepository.OpenConnection())
-            {
-                if (isBlocked.HasValue)
-                {
-                    blockedUser = await connection.Query(x => x.BlockedByUserId == blockedByUserId && x.BlockedUserId == blockedUserId && x.IsBlocked == isBlocked).FirstOrDefaultAsync();
-                }
-                else
-                {
-                    blockedUser = await connection.Query(x => x.BlockedByUserId == blockedByUserId && x.BlockedUserId == blockedUserId).FirstOrDefaultAsync();
-                }
-            }
-
-            if (blockedUser == null)
-            {
-                return null;
-            }
-
-            return blockedUser;
-        }
-
-        public virtual async Task<IPagedList<BlockedUser>> GetAllBlockedUsers(string blockedByUserId, int pageIndex = 0, int pageSize = int.MaxValue)
-        {
-            // List<BlockedUser> blockedUsers = new List<BlockedUser>();         
-
-            using (var blockedUserConnection = blockedUserRepository.OpenConnection())
-            {
-                var query = blockedUserConnection.Query();
-
-                if (!string.IsNullOrEmpty(blockedByUserId))
-                {
-                    //blockedUsers = await query.Where(bu => bu.BlockedByUserId == blockedByUserId).ToListAsync();
-                    query = query.Where(bu => bu.BlockedByUserId == blockedByUserId);
-                }
-                query = query.OrderByDescending(bu => bu.BlockedByUserId);
-
-                return await Task.FromResult(new PagedList<BlockedUser>(query, pageIndex, pageSize));
-            }
+            await reportedUserRepository.DeleteAsync(x => x.Id == reportedUserId);
         }
 
         public virtual async Task InsertReportedUser(ReportedUser reportedUser)
@@ -1405,7 +1367,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
         private async Task<bool> IsForumModerator(KoreUser user)
         {
             var roles = await membershipService.GetRolesForUser(user.Id);
-            return roles.Any(x => x.Name == Constants.Roles.ForumModerators);
+            return roles.Any(x => x.Name == Constants.Roles.ForumModerators || x.Name == KoreConstants.Roles.Administrators);
         }
 
         #endregion Utilities

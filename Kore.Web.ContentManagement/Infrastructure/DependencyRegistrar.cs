@@ -25,6 +25,7 @@ using Kore.Web.Mvc.Themes;
 using Kore.Web.Navigation;
 using Kore.Web.Security.Membership;
 using Kore.Web.Security.Membership.Permissions;
+using Kore.Web.Services;
 
 namespace Kore.Web.ContentManagement.Infrastructure
 {
@@ -65,6 +66,8 @@ namespace Kore.Web.ContentManagement.Infrastructure
             builder.RegisterType<ZoneService>().As<IZoneService>().InstancePerDependency();
 
             builder.RegisterType<NewsletterService>().As<INewsletterService>().InstancePerDependency();
+
+            builder.RegisterType<AuthenticationService>().As<IAuthenticationService>().InstancePerDependency();
 
             #endregion Services
 

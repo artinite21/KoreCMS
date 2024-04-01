@@ -1,7 +1,4 @@
-﻿using Kore.Collections.Generic;
-using Kore.Plugins.Messaging.Forums.Data.Domain;
-using System;
-using System.Collections.Generic;
+﻿using System;
 
 namespace Kore.Plugins.Messaging.Forums.Models
 {
@@ -22,6 +19,10 @@ namespace Kore.Plugins.Messaging.Forums.Models
         public string UserId { get; set; }
 
         public int? ParentPostId { get; set; }
+
+        public string ParentUserName { get; set; }
+
+        public int PostNumber { get; set; }
 
         public bool AllowViewingProfiles { get; set; }
 
@@ -45,9 +46,17 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public bool IsDeleted { get; set; }
 
+        public bool IsRegisteredUser { get; set; }
+
+        public bool IsTopicLocked { get; set; }
+
         public string UserName { get; set; }
 
+        public string UserRoleName { get; set; }
+
         public bool IsUserForumModerator { get; set; }
+
+        public bool IsCurrentUserForumModerator { get; set; }
 
         public string PostEditedOnStr { get; set; }
 

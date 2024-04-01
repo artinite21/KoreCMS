@@ -9,6 +9,7 @@ using Kore.Web.Mvc.Themes;
 using Kore.Web.Navigation;
 using Kore.Web.Plugins;
 using Kore.Web.Security.Membership.Permissions;
+using Kore.Web.Services;
 
 namespace Kore.Plugins.Messaging.Forums.Infrastructure
 {
@@ -35,7 +36,9 @@ namespace Kore.Plugins.Messaging.Forums.Infrastructure
 
             builder.RegisterType<AutoMenuProvider>().As<IAutoMenuProvider>().SingleInstance();
             builder.RegisterType<ForumService>().As<IForumService>().InstancePerDependency();
-            builder.RegisterType<FriendService>().As<IFriendService>().InstancePerDependency();
+            builder.RegisterType<UserManagementService>().As<IUserManagementService>().InstancePerDependency();
+
+            builder.RegisterType<AuthenticationService>().As<IAuthenticationService>().InstancePerDependency();
         }
 
         public int Order => 9999;

@@ -12,9 +12,13 @@ using Kore.Web.ContentManagement.Areas.Admin.Blog.Services;
 using Kore.Web.ContentManagement.Areas.Admin.Pages;
 using Kore.Web.Mvc;
 using Kore.Web.Mvc.Optimization;
+using Kore.Web.Security;
+using Kore.Web.Services;
 
 namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
 {
+    [JwtToken]
+    [Authorize]
     [RouteArea("")]
     [RoutePrefix("blog")]
     public class BlogContentController : KoreController
@@ -24,25 +28,33 @@ namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
         private readonly Lazy<IBlogCategoryService> categoryService;
         private readonly Lazy<IBlogTagService> tagService;
         private readonly Lazy<IMembershipService> membershipService;
+        private readonly Lazy<IAuthenticationService> authenticationService;
 
         public BlogContentController(
             BlogSettings blogSettings,
             Lazy<IBlogPostService> postService,
             Lazy<IBlogCategoryService> categoryService,
             Lazy<IBlogTagService> tagService,
-            Lazy<IMembershipService> membershipService)
+            Lazy<IMembershipService> membershipService,
+            Lazy<IAuthenticationService> authenticationService)
         {
             this.blogSettings = blogSettings;
             this.categoryService = categoryService;
             this.postService = postService;
             this.tagService = tagService;
             this.membershipService = membershipService;
+            this.authenticationService = authenticationService;
         }
 
         [Compress]
         [Route("")]
         public async Task<ActionResult> Index()
         {
+            if (!authenticationService.Value.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             // If there are access restrictions
             if (!await PageSecurityHelper.CheckUserHasAccessToBlog(User))
             {
@@ -283,6 +295,11 @@ namespace Kore.Web.ContentManagement.Areas.Admin.Blog.Controllers
 
             // Else use default template
             return View("Kore.Web.ContentManagement.Areas.Admin.Blog.Views.BlogContent.Details", model);
+        }
+
+        private RedirectToRouteResult RedirectToRefreshToken()
+        {
+            return RedirectToAction("RefreshToken", "Account", new { returnUrl = Request.Url.ToString() });
         }
     }
 }

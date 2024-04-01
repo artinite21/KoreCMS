@@ -7,6 +7,7 @@ namespace KoreCMS.Messaging
     public class AccountMessageTemplates : IMessageTemplatesProvider
     {
         public const string Account_Registered = "Account: Registered";
+        public const string Account_Banned = "Account: Banned";
         public const string Account_Confirmed = "Account: Confirmed";
         public const string Account_PasswordReset = "Account: Password Reset";
         public const string Account_ProfileChanged = "Account: Profile Changed";
@@ -18,6 +19,7 @@ namespace KoreCMS.Messaging
         public IEnumerable<MessageTemplate> GetTemplates()
         {
             yield return new MessageTemplate(Account_Registered, "Welcome");
+            yield return new MessageTemplate(Account_Banned, "Account Banned");
             yield return new MessageTemplate(Account_Confirmed, "Account Confirmed");
             yield return new MessageTemplate(Account_PasswordReset, "Password Reset");
             yield return new MessageTemplate(Account_ProfileChanged, "Profile Changed");

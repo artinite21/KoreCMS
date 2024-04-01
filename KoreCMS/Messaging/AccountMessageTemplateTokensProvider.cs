@@ -12,6 +12,13 @@ namespace KoreCMS.Messaging
         {
             switch (templateName)
             {
+                case AccountMessageTemplates.Account_Banned:
+                    return new[]
+                    {
+                        "[UserName]",
+                        "[Email]"
+                    };
+
                 case AccountMessageTemplates.Account_Confirmed:
                     return new[]
                     {

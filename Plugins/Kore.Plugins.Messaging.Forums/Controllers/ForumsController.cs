@@ -22,9 +22,12 @@ using Kore.Web.Html;
 using Kore.Web.Mvc;
 using Kore.Web.Mvc.Filters;
 using Kore.Web.ProfanityFilter;
+using Kore.Web.Security;
+using Kore.Web.Services;
 
 namespace Kore.Plugins.Messaging.Forums.Controllers
 {
+    [JwtToken]
     [Authorize]
     [RouteArea("")]
     [RoutePrefix("forums")]
@@ -32,7 +35,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
     {
         #region Fields
 
-        private readonly IFriendService friendService;
+        private readonly IUserManagementService userManagementService;
         private readonly IForumService forumService;
 
         //private readonly IPictureService _pictureService;
@@ -50,12 +53,14 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
         private readonly ElasticProvider<ForumPostModel> forumPostElasticProvider;
 
+        private readonly IAuthenticationService authenticationService;
+
         #endregion Fields
 
         #region Constructors
 
         public ForumsController(
-            IFriendService friendService,
+            IUserManagementService userManagementService,
             IForumService forumService,
             //IPictureService pictureService,
             IRegionService regionService,
@@ -65,9 +70,10 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
             //MediaSettings mediaSettings,
             IDateTimeHelper dateTimeHelper,
             IMembershipService membershipService,
+            IAuthenticationService authenticationService,
             KoreSiteSettings siteSettings)
         {
-            this.friendService = friendService;
+            this.userManagementService = userManagementService;
             this.forumService = forumService;
             //this._pictureService = pictureService;
             this.regionService = regionService;
@@ -78,6 +84,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
             this.dateTimeHelper = dateTimeHelper;
             this.membershipService = membershipService;
             this.siteSettings = siteSettings;
+            this.authenticationService = authenticationService;
 
             this.forumPostElasticProvider = new ElasticProvider<ForumPostModel>("http://localhost:9200", "");
         }
@@ -104,7 +111,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 UserId = topic.UserId,
                 //AllowViewingProfiles = _customerSettings.AllowViewingProfiles, //TODO
                 AllowViewingProfiles = true,
-                UserName = user != null ? await membershipService.GetUserDisplayName(user) : "No longer a registered user."
+                UserName = await membershipService.GetUserDisplayName(user),
+                IsRegisteredUser = user != null ? true : false
             };
 
             var posts = await forumService.GetAllPosts(topic.Id, null, string.Empty, 1, forumSettings.PostsPageSize);
@@ -198,8 +206,13 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [NonAction]
         private async Task<bool> IsForumModerator(KoreUser user)
         {
+            if (user == null)
+            {
+                return false;
+            }
+
             var roles = await membershipService.GetRolesForUser(user.Id);
-            return roles.Any(x => x.Name == Constants.Roles.ForumModerators);
+            return roles.Any(x => x.Name == Constants.Roles.ForumModerators || x.Name == KoreConstants.Roles.Administrators);
         }
 
         #endregion Utilities
@@ -209,6 +222,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("")]
         public async Task<ActionResult> Index()
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -229,6 +247,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("active-discussions/{forumId}/{page}")]
         public async Task<ActionResult> ActiveDiscussions(int forumId = 0, int page = 1)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -344,6 +367,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("forum-group/{id}/{slug}")]
         public async Task<ActionResult> ForumGroup(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -363,6 +391,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("forum-guidelines")]
         public ActionResult ForumGuidelines()
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             WorkContext.Breadcrumbs.Add("Forum Guidelines");
             return View();
         }
@@ -371,6 +404,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("forum/{id}/{slug}/page/{page}")]
         public async Task<ActionResult> Forum(int id, int page = 1)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -424,6 +462,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("forum/rss/{id}")]
         public async Task<ActionResult> ForumRss(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -490,6 +533,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("forum/watch/{id}")]
         public async Task<ActionResult> ForumWatch(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             string watchTopic = T(LocalizableStrings.WatchForum);
             string unwatchTopic = T(LocalizableStrings.UnwatchForum);
             string returnText = watchTopic;
@@ -536,6 +584,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/{id}/{slug}/page/{page}")]
         public async Task<ActionResult> Topic(int id, int page = 1)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -568,9 +621,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     IsUserAllowedToDeleteTopic = await forumService.IsUserAllowedToDeleteTopic(WorkContext.CurrentUser, topic),
                     IsUserAllowedToMoveTopic = await forumService.IsUserAllowedToMoveTopic(WorkContext.CurrentUser, topic),
                     IsUserAllowedToSubscribe = await forumService.IsUserAllowedToSubscribe(WorkContext.CurrentUser),
+                    IsUserAllowedToLockTopic = await forumService.IsUserAllowedToLockTopic(WorkContext.CurrentUser, topic),
                     PostsPageIndex = posts.PageIndex,
                     PostsPageSize = posts.PageSize,
-                    PostsTotalRecords = posts.ItemCount
+                    PostsTotalRecords = posts.ItemCount,
+                    IsLocked = topic.IsLocked
                 };
 
                 if (model.IsUserAllowedToSubscribe)
@@ -601,22 +656,26 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         IsCurrentUserAllowedToDeletePost = await forumService.IsUserAllowedToDeletePost(WorkContext.CurrentUser, post),
                         UserId = post.UserId,
                         ParentPostId = post.ParentPostId,
+                        PostNumber = post.PostNumber,
                         //AllowViewingProfiles = _customerSettings.AllowViewingProfiles, //TODO
-                        AllowViewingProfiles = false,
+                        AllowViewingProfiles = true,
                         UserName = await membershipService.GetUserDisplayName(postUser),
                         IsUserForumModerator = await IsForumModerator(postUser),
+                        IsCurrentUserForumModerator = await IsForumModerator(WorkContext.CurrentUser),
                         ShowUsersPostCount = forumSettings.ShowUsersPostCount,
-                        ForumPostCount = postUser.GetAttribute<int>(SystemUserAttributeNames.ForumPostCount),
+                        ForumPostCount = postUser != null ? postUser.GetAttribute<int>(SystemUserAttributeNames.ForumPostCount) : 0,
                         //ShowUsersJoinDate = _customerSettings.ShowUsersJoinDate, // TODO
                         ShowUsersJoinDate = false,
                         //UserJoinDate = postUser.CreatedOnUtc, //TODO
                         AllowPrivateMessages = forumSettings.AllowPrivateMessages,
                         SignaturesEnabled = forumSettings.SignaturesEnabled,
-                        FormattedSignature = postUser.GetAttribute<string>(SystemUserAttributeNames.Signature).FormatForumSignatureText(),
+                        FormattedSignature = postUser != null ? postUser.GetAttribute<string>(SystemUserAttributeNames.Signature).FormatForumSignatureText() : string.Empty,
                         UserAvatarUrl = await membershipService.GetProfileEntry(post.UserId, "AvatarUrl"),
                         IsFlagged = bool.Parse(post.IsFlagged),
                         IsEdited = post.IsEdited,
-                        IsDeleted = post.IsDeleted
+                        IsDeleted = post.IsDeleted,
+                        IsRegisteredUser = postUser != null ? true : false,
+                        IsTopicLocked = topic.IsLocked
                     };
 
                     //created on string
@@ -631,22 +690,50 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         postModel.PostCreatedOnStr = dateTimeHelper.ConvertToUserTime(post.CreatedOnUtc, DateTimeKind.Utc).ToString("f");
                     }
 
-                    postModel.UserAvatarUrl = Kore.Web.Html.HtmlHelper.FormatText(postModel.UserAvatarUrl, false, true, false, true, false, false);
+                    if (postUser != null)
+                    {
+                        var userRoles = await membershipService.GetRolesForUser(postUser.Id);
 
-                    string isAvatarApprovedValue = await membershipService.GetProfileEntry(post.UserId, "IsAvatarApproved");
-                    postModel.IsAvatarApproved = bool.Parse(isAvatarApprovedValue);
+                        if (userRoles != null)
+                        {
+                            var role = userRoles.FirstOrDefault(r => r.Name == Constants.Roles.ForumModerators || r.Name == KoreConstants.Roles.Administrators);
 
-                    var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, post.UserId, true);
-                    postModel.HasBlockedUser = blockedUser != null && blockedUser.IsBlocked;
+                            if (role != null)
+                            {
+                                postModel.UserRoleName = role.Name;
+                            }
+                        }
 
-                    var blockedByUser = await forumService.GetBlockedUserById(post.UserId, WorkContext.CurrentUser.Id, true);
-                    postModel.BlockedByUser = blockedByUser != null && blockedByUser.IsBlocked;
+                        postModel.UserName = postModel.UserName.Trim();
 
-                    var userFlaggedPost = await forumService.GetUserFlaggedPostById(WorkContext.CurrentUser.Id, post.TopicId, post.Id);
-                    postModel.FlaggedByUser = userFlaggedPost != null && userFlaggedPost.FlaggedByUser;
+                        postModel.UserAvatarUrl = Kore.Web.Html.HtmlHelper.FormatText(postModel.UserAvatarUrl, false, true, false, true, false, false);
 
-                    var friend = await friendService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, post.UserId);
-                    postModel.IsFriend = friend != null;
+                        string isAvatarApprovedValue = await membershipService.GetProfileEntry(post.UserId, "IsAvatarApproved");
+                        postModel.IsAvatarApproved = bool.Parse(isAvatarApprovedValue);
+
+                        var blockedUser = await userManagementService.GetBlockedUserByIdAsync(WorkContext.CurrentUser.Id, post.UserId, true);
+                        postModel.HasBlockedUser = blockedUser != null && blockedUser.IsBlocked;
+
+                        var blockedByUser = await userManagementService.GetBlockedUserByIdAsync(post.UserId, WorkContext.CurrentUser.Id, true);
+                        postModel.BlockedByUser = blockedByUser != null && blockedByUser.IsBlocked;
+
+                        var userFlaggedPost = await forumService.GetUserFlaggedPostById(WorkContext.CurrentUser.Id, post.TopicId, post.Id);
+                        postModel.FlaggedByUser = userFlaggedPost != null && userFlaggedPost.FlaggedByUser;
+
+                        var friend = await userManagementService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, post.UserId);
+                        postModel.IsFriend = friend != null;
+                    }
+
+                    if (postModel.ParentPostId != null)
+                    {
+                        var parentPost = await forumService.GetPostById((int)postModel.ParentPostId);
+                        var parentPostUser = await membershipService.GetUserById(parentPost.UserId);
+
+                        if (parentPostUser != null)
+                        {
+                            postModel.ParentUserName = await membershipService.GetUserDisplayName(parentPostUser);
+                        }
+                    }
 
                     // TODO
                     ////avatar
@@ -681,6 +768,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/watch/{id}")]
         public async Task<ActionResult> TopicWatch(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             string watchTopic = T(LocalizableStrings.WatchTopic);
             string unwatchTopic = T(LocalizableStrings.UnwatchTopic);
             string returnText = watchTopic;
@@ -726,13 +818,25 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/move/{id}")]
         public async Task<ActionResult> TopicMove(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
             }
 
             var topic = await forumService.GetTopicById(id);
-            if (topic == null)
+            if (topic != null)
+            {
+                if (!await forumService.IsUserAllowedToMoveTopic(WorkContext.CurrentUser, topic))
+                {
+                    return new HttpUnauthorizedResult();
+                }
+            }
+            else
             {
                 return RedirectToAction("Index");
             }
@@ -753,6 +857,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/move-post")]
         public async Task<ActionResult> TopicMovePost(TopicMoveModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -778,6 +887,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/delete/{id}")]
         public async Task<ActionResult> TopicDelete(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -806,6 +920,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/create/{id}")]
         public async Task<ActionResult> TopicCreate(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -844,6 +963,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> TopicCreatePost(EditForumTopicModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -868,7 +992,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
                     var filter = new ProfanityFilter();
-                    subject = "[CENSORED] " + filter.CensorString(subject);
+                    subject = "[" + DateTime.Today.ToString("d") + "] " + filter.CensorString(subject);
 
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
@@ -904,7 +1028,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         TopicType = topicType,
                         Subject = subject,
                         CreatedOnUtc = nowUtc,
-                        UpdatedOnUtc = nowUtc
+                        UpdatedOnUtc = nowUtc,
+                        IsLocked = false
                     };
                     await forumService.InsertTopic(topic, true);
 
@@ -917,7 +1042,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         IPAddress = ipAddress,
                         CreatedOnUtc = nowUtc,
                         UpdatedOnUtc = nowUtc,
-                        IsFlagged = bool.FalseString
+                        IsFlagged = bool.FalseString,
+                        PostNumber = topic.NumPosts + 1
                     };
                     await forumService.InsertPost(post, false);
 
@@ -985,6 +1111,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("topic/edit/{id}")]
         public async Task<ActionResult> TopicEdit(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1044,6 +1175,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> TopicEditPost(EditForumTopicModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1074,7 +1210,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                     int maxSubjectLength = forumSettings.TopicSubjectMaxLength;
 
                     var filter = new ProfanityFilter();
-                    subject = "[CENSORED] " + filter.CensorString(subject);
+                    subject = "[" + DateTime.Today.ToString("d") + "] " + filter.CensorString(subject);
 
                     if (maxSubjectLength > 0 && subject.Length > maxSubjectLength)
                     {
@@ -1206,6 +1342,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> TopicSave(EditForumTopicModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (model.IsEdit)
             {
                 return await TopicEditPost(model);
@@ -1219,6 +1360,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("post/delete/{id}")]
         public async Task<ActionResult> PostDelete(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1238,14 +1384,22 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 int forumId = forum.Id;
                 string forumSlug = forum.GetSeName();
 
-                post.Text = string.Empty;
+                if (await IsForumModerator(WorkContext.CurrentUser))
+                {
+                    post.Text = "Post has been deleted by the Forum Moderator.";
+                }
+                else
+                {
+                    post.Text = "Post has been deleted by the author.";
+                }
+
                 post.IsDeleted = true;
                 await forumService.UpdatePost(post);
 
                 //delete forum post from elastic search index
                 forumPostElasticProvider.client.Delete<ForumPostModel>(post.Id, x => x.Index("forumpostmodels"));
 
-                //await forumService.DeletePost(post);
+                await forumService.DeletePost(post);
 
                 //get topic one more time because it can be deleted (first or only post deleted)
                 topic = await forumService.GetTopicById(post.TopicId);
@@ -1262,6 +1416,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("post/create/{id}/{quote?}")]
         public async Task<ActionResult> PostCreate(int id, int? quote)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1346,6 +1505,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> PostCreatePost(EditForumPostModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1390,7 +1554,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         IPAddress = ipAddress,
                         CreatedOnUtc = nowUtc,
                         UpdatedOnUtc = nowUtc,
-                        IsFlagged = bool.FalseString
+                        IsFlagged = bool.FalseString,
+                        PostNumber = topic.NumPosts + 1,
                     };
                     await forumService.InsertPost(post, true);
 
@@ -1486,6 +1651,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> PostCreateReplyPost(EditForumPostModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1531,7 +1701,8 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                         CreatedOnUtc = nowUtc,
                         UpdatedOnUtc = nowUtc,
                         ParentPostId = model.ParentPostId,
-                        IsFlagged = bool.FalseString
+                        IsFlagged = bool.FalseString,
+                        PostNumber = topic.NumPosts + 1
                     };
                     await forumService.InsertPost(replyPost, true);
 
@@ -1624,6 +1795,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("post/reply/{id}")]
         public async Task<ActionResult> PostReply(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1684,6 +1860,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("post/edit/{id}")]
         public async Task<ActionResult> PostEdit(int id)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1744,6 +1925,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> PostEditPost(EditForumPostModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1873,6 +2059,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> PostSave(EditForumPostModel model)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (model.IsEdit)
             {
                 return await PostEditPost(model);
@@ -1890,6 +2081,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("post/flag/{id}/{flagPost}")]
         public async Task<ActionResult> PostFlag(int id, bool flagPost)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -1950,21 +2146,21 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
                 await forumService.UpdatePost(post);
 
-                var topic = post.ForumTopic ?? await forumService.GetTopicById(post.TopicId);
-                var forum = topic.Forum ?? await forumService.GetForumById(topic.ForumId);
+                //var topic = post.ForumTopic ?? await forumService.GetTopicById(post.TopicId);
+                //var forum = topic.Forum ?? await forumService.GetForumById(topic.ForumId);
 
-                int forumId = forum.Id;
-                string forumSlug = forum.GetSeName();
+                //int forumId = forum.Id;
+                //string forumSlug = forum.GetSeName();
 
-                //get topic one more time because it can be deleted (first or only post deleted)
-                topic = await forumService.GetTopicById(post.TopicId);
-                if (topic == null)
-                {
-                    return RedirectToAction("Forum", new { id = forumId, slug = forumSlug });
-                }
-                return RedirectToAction("Topic", new { id = topic.Id, slug = topic.GetSeName() });
+                ////get topic one more time because it can be deleted (first or only post deleted)
+                //topic = await forumService.GetTopicById(post.TopicId);
+                //if (topic == null)
+                //{
+                //    return RedirectToAction("Forum", new { id = forumId, slug = forumSlug });
+                //}
+                //return RedirectToAction("Topic", new { id = topic.Id, slug = topic.GetSeName() });
             }
-            return RedirectToAction("Index");
+            return Json(new { Success = true });
         }
 
         [Route("search")]
@@ -1976,6 +2172,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
             string limitDays,
             int page = 1)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.ForumsEnabled)
             {
                 return RedirectToHomePage();
@@ -2187,6 +2388,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 model.UserId = post.UserId;
                 //model.AllowViewingProfiles = _customerSettings.AllowViewingProfiles; //TODO
                 model.AllowViewingProfiles = true;
+                model.IsRegisteredUser = postUser != null ? true : false;
                 model.UserName = AsyncHelper.RunSync(() => membershipService.GetUserDisplayName(postUser));
                 //created on string
                 if (forumSettings.RelativeDateTimeFormattingEnabled)
@@ -2242,6 +2444,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("subscribe/{page?}")]
         public async Task<ActionResult> UserForumSubscriptions(int? page)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (!forumSettings.AllowUsersToManageSubscriptions)
             {
                 return RedirectToAction("Index");
@@ -2320,6 +2527,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("subscribe-post")]
         public async Task<ActionResult> UserForumSubscriptionsPOST(FormCollection formCollection)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             foreach (string key in formCollection.AllKeys)
             {
                 string value = formCollection[key];
@@ -2388,15 +2600,25 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
 
         [HttpPost]
         [Route("get-deleted-post")]
-        public ActionResult GetDeletedPost(int postId)
+        public ActionResult GetDeletedPost(ForumPostModel model)
         {
-            return PartialView("_ForumDeletedPost", postId);
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            return PartialView("_ForumDeletedPost", model);
         }
 
         [HttpPost]
         [Route("get-reply-post")]
         public ActionResult GetReplyPost(ForumPostModel forumPostModel)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             return PartialView("_ForumPost", forumPostModel);
         }
 
@@ -2404,17 +2626,22 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("add-friend/{friendId}")]
         public async Task<ActionResult> AddFriend(string friendId)
         {
-            var blockedUser = await forumService.GetBlockedUserById(WorkContext.CurrentUser.Id, friendId, true);
-            var blockedByUser = await forumService.GetBlockedUserById(friendId, WorkContext.CurrentUser.Id, true);
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            var blockedUser = await userManagementService.GetBlockedUserByIdAsync(WorkContext.CurrentUser.Id, friendId, true);
+            var blockedByUser = await userManagementService.GetBlockedUserByIdAsync(friendId, WorkContext.CurrentUser.Id, true);
 
             if (blockedUser != null ||
                 blockedByUser != null ||
                 friendId == WorkContext.CurrentUser.Id)
             {
-                return new HttpUnauthorizedResult();
+                return Redirect("/account/blocked");
             }
 
-            var friend = await friendService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, friendId);
+            var friend = await userManagementService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, friendId);
 
             if (friend != null)
             {
@@ -2426,7 +2653,7 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
                 UserId = WorkContext.CurrentUser.Id,
                 FriendId = friendId
             };
-            await friendService.InsertFriendAsync(f);
+            await userManagementService.InsertFriendAsync(f);
 
             //string url = Request.UrlReferrer.AbsolutePath;
             //return Redirect(url);
@@ -2436,11 +2663,16 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [Route("delete-friend/{friendId}")]
         public async Task<ActionResult> DeleteFriend(string friendId)
         {
-            var friend = await friendService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, friendId);
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            var friend = await userManagementService.GetFriendByIdAsync(WorkContext.CurrentUser.Id, friendId);
 
             if (friend != null)
             {
-                await friendService.DeleteFriendAsync(friend);
+                await userManagementService.DeleteFriendAsync(friend);
             }
 
             string url = Request.UrlReferrer.AbsolutePath;
@@ -2448,9 +2680,18 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         }
 
         [Route("report-user/{reportedUserId}")]
-        public ActionResult ReportUser(string reportedUserId)
+        public async Task<ActionResult> ReportUser(string reportedUserId)
         {
-            if (reportedUserId == WorkContext.CurrentUser.Id)
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            var user = await membershipService.GetUserById(reportedUserId);
+
+            if (user == null ||
+                reportedUserId == WorkContext.CurrentUser.Id ||
+                await IsForumModerator(user))
             {
                 return new HttpUnauthorizedResult();
             }
@@ -2470,6 +2711,11 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
         [ValidateInput(false)]
         public async Task<ActionResult> PostReportUser(ReportUserModel reportUserModel)
         {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
             if (ModelState.IsValid)
             {
                 try
@@ -2507,6 +2753,118 @@ namespace Kore.Plugins.Messaging.Forums.Controllers
             reportUserModel.ReportedUserId = reportUserModel.ReportedUserId;
 
             return View("ReportUser", reportUserModel);
+        }
+
+        [Route("topic/lock/{id}")]
+        public async Task<ActionResult> TopicLock(int id, bool isLocked)
+        {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            if (!forumSettings.ForumsEnabled)
+            {
+                return RedirectToHomePage();
+            }
+
+            var topic = await forumService.GetTopicById(id);
+            if (topic != null)
+            {
+                if (!await forumService.IsUserAllowedToLockTopic(WorkContext.CurrentUser, topic))
+                {
+                    return new HttpUnauthorizedResult();
+                }
+            }
+            else
+            {
+                return RedirectToAction("Index");
+            }
+
+            topic.IsLocked = isLocked;
+            await forumService.UpdateTopic(topic);
+
+            string url = Request.UrlReferrer.AbsolutePath;
+            return Redirect(url);
+        }
+
+        [Route("watched")]
+        public async Task<ActionResult> Watched(int? page)
+        {
+            if (!authenticationService.ValidateToken(HttpContext))
+            {
+                return RedirectToRefreshToken();
+            }
+
+            if (!forumSettings.AllowUsersToManageSubscriptions)
+            {
+                return RedirectToAction("Index");
+            }
+
+            int pageIndex = 0;
+            if (page > 0)
+            {
+                pageIndex = page.Value - 1;
+            }
+
+            var customer = WorkContext.CurrentUser;
+
+            var pageSize = forumSettings.ForumSubscriptionsPageSize;
+
+            var subscriptions = await forumService.GetAllSubscriptions(customer.Id, 0, 0, pageIndex, pageSize);
+
+            var model = new UserForumSubscriptionsModel();
+
+            foreach (var subscription in subscriptions)
+            {
+                int topicId = subscription.TopicId;
+                int forumId = subscription.ForumId;
+                bool topicSubscription = false;
+                string title = string.Empty;
+                string slug = string.Empty;
+
+                if (topicId > 0)
+                {
+                    topicSubscription = true;
+                    var topic = await forumService.GetTopicById(topicId);
+                    if (topic != null)
+                    {
+                        title = topic.Subject;
+                        slug = topic.GetSeName();
+                    }
+                }
+
+                var forum = await forumService.GetForumById(forumId);
+
+                model.ForumSubscriptions.Add(new UserForumSubscriptionsModel.ForumSubscriptionModel
+                {
+                    Id = subscription.Id,
+                    ForumTopicId = topicId,
+                    ForumId = subscription.ForumId,
+                    TopicSubscription = topicSubscription,
+                    Title = title,
+                    Slug = slug,
+                    ForumTitle = forum != null ? forum.Name : string.Empty,
+                    ForumSlug = forum != null ? forum.GetSeName() : string.Empty
+                });
+            }
+
+            model.PagerModel = new PagerModel
+            {
+                PageSize = subscriptions.PageSize,
+                TotalRecords = subscriptions.ItemCount,
+                PageIndex = subscriptions.PageIndex,
+                ShowTotalSummary = false,
+                RouteActionName = "UserForumSubscriptionsPaged",
+                RouteValues = new ForumSubscriptionsRouteValues { page = pageIndex }
+            };
+
+            return View(model);
+        }
+
+        private RedirectToRouteResult RedirectToRefreshToken()
+        {
+            return RedirectToAction("RefreshToken", "Account", new { returnUrl = Request.Url.ToString() });
         }
 
         #endregion Methods

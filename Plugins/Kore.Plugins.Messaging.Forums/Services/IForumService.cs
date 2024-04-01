@@ -42,16 +42,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
 
         Task InsertUserFlaggedPost(UserFlaggedPost userFlaggedPost);
 
-        Task<BlockedUser> GetBlockedUserById(string blockedByUserId, string blockedUserId, bool? isBlocked = default);
-
-        Task<IPagedList<BlockedUser>> GetAllBlockedUsers(
-            string blockedByUserId,
-            int pageIndex = 0,
-            int pageSize = int.MaxValue);
-
-        Task InsertBlockedUser(BlockedUser blockedUser);
-
-        Task UpdateBlockedUser(BlockedUser blockedUser);
+        Task DeleteReportedUserById(int reportedUserId);
 
         Task InsertReportedUser(ReportedUser reportedUser);
 
@@ -104,7 +95,7 @@ namespace Kore.Plugins.Messaging.Forums.Services
 
         Task DeletePrivateMessage(PrivateMessage privateMessage);
 
-        Task DeletePrivateMessagesById(string userId);
+        Task DeletePrivateMessagesByUserId(string userId);
 
         Task<PrivateMessage> GetPrivateMessageById(int privateMessageId);
 
@@ -144,6 +135,8 @@ namespace Kore.Plugins.Messaging.Forums.Services
         Task<bool> IsUserAllowedToMoveTopic(KoreUser user, ForumTopic topic);
 
         Task<bool> IsUserAllowedToDeleteTopic(KoreUser user, ForumTopic topic);
+
+        Task<bool> IsUserAllowedToLockTopic(KoreUser user, ForumTopic topic);
 
         Task<bool> IsUserAllowedToCreatePost(KoreUser user, ForumTopic topic);
 

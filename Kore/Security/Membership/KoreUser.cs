@@ -1,4 +1,5 @@
-﻿using System.Web.Script.Serialization;
+﻿using System;
+using System.Web.Script.Serialization;
 using Kore.Data;
 using Newtonsoft.Json;
 
@@ -15,6 +16,10 @@ namespace Kore.Security.Membership
         public string Email { get; set; }
 
         public bool IsLockedOut { get; set; }
+
+        public DateTime CreatedOnUtc { get; set; }
+
+        public DateTime LastActive { get; set; }
 
         #region IEntity Members
 

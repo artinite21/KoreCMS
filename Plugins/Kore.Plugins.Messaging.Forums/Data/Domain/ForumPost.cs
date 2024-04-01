@@ -32,6 +32,8 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
 
         public bool IsDeleted { get; set; }
 
+        public int PostNumber { get; set; }
+
         public virtual ForumTopic ForumTopic { get; set; }
 
         #region IEntity Members
@@ -61,6 +63,7 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
             this.Property(x => x.FlagCount).IsRequired();
             this.Property(x => x.IsEdited).IsRequired();
             this.Property(x => x.IsDeleted).IsRequired();
+            this.Property(x => x.PostNumber).IsRequired();
 
             this.HasRequired(x => x.ForumTopic).WithMany().HasForeignKey(x => x.TopicId);
         }

@@ -34,6 +34,8 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
 
         public virtual Forum Forum { get; set; }
 
+        public bool IsLocked { get; set; }
+
         public int NumReplies
         {
             get { return NumPosts > 0 ? (NumPosts - 1) : 0; }
@@ -65,6 +67,7 @@ namespace Kore.Plugins.Messaging.Forums.Data.Domain
             this.Property(x => x.LastPostUserId).HasMaxLength(128).IsUnicode(true);
             this.Property(x => x.CreatedOnUtc).IsRequired();
             this.Property(x => x.UpdatedOnUtc).IsRequired();
+            this.Property(x => x.IsLocked);
 
             this.HasRequired(x => x.Forum).WithMany().HasForeignKey(x => x.ForumId);
         }

@@ -26,6 +26,8 @@ namespace Kore.Plugins.Messaging.Forums.Models
 
         public string UserName { get; set; }
 
+        public bool IsRegisteredUser { get; set; }
+
         //posts
         public int TotalPostPages { get; set; }
     }
